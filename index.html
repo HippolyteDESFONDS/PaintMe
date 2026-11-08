@@ -1,0 +1,2108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PaintMe">
+<meta name="theme-color" content="#141519">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
+<title>PaintMe</title>
+<style>
+:root{
+  --bg:#141519; --panel:#1d1e24; --panel2:#25272e; --panel3:#2c2f37; --line:#30323a;
+  --text:#e7e7ec; --mute:#9295a0; --acc:#ff8a3d; --acc-ink:#1b1209; --ok:#58c48b; --bad:#e8655a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:12px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app{display:grid;grid-template-rows:40px 1fr 24px;height:100vh;height:100dvh}
+header{display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--panel);border-bottom:1px solid var(--line);min-width:0;overflow-x:auto}
+.brand{font-weight:800;font-size:14px;letter-spacing:.3px;margin-right:10px;white-space:nowrap}
+.brand b{color:var(--acc)}
+.sep{width:1px;height:20px;background:var(--line);margin:0 6px;flex:none}
+.grow{flex:1}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font:inherit;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--panel3);border-color:#454852}
+button:active{transform:translateY(1px)}
+button.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button.ghost{background:transparent;border-color:transparent}
+button.ghost:hover{background:var(--panel2)}
+button.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.4;cursor:default}
+#main{display:grid;grid-template-columns:46px 244px minmax(0,1fr) 284px;min-height:0}
+#tools{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;overflow-y:auto}
+.tool{width:34px;height:34px;padding:0;display:grid;place-items:center;border-radius:8px}
+.tool svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tool.on svg{stroke:var(--acc-ink)}
+.tsep{width:24px;height:1px;background:var(--line);margin:4px 0}
+aside.panel{background:var(--panel);overflow-y:auto;min-height:0}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+.sec{border-bottom:1px solid var(--line);padding:9px 10px 10px}
+.sec h3{margin:0 0 7px;font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--mute);font-weight:700;display:flex;align-items:center;gap:6px}
+.sec h3 .grow{flex:1}
+.row{display:grid;grid-template-columns:74px 1fr 46px;align-items:center;gap:6px;margin:3px 0}
+.row>label{color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row2{display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:5px;color:var(--text);cursor:pointer}
+.chk input{accent-color:var(--acc);margin:0}
+input[type=range]{width:100%;accent-color:var(--acc);margin:0;height:16px}
+input[type=number],input[type=text],select{background:#121317;color:var(--text);border:1px solid var(--line);border-radius:5px;padding:3px 5px;font:inherit;width:100%;min-width:0}
+input[type=number]{padding:3px 2px 3px 5px}
+input[type=color]{width:30px;height:24px;border:1px solid var(--line);border-radius:5px;background:none;padding:0;cursor:pointer}
+.presets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.presets button{padding:5px 2px;font-size:11px}
+.tipwrap{display:flex;gap:8px;align-items:center}
+#tipPrev{width:56px;height:56px;border-radius:6px;background:#0f1013;border:1px solid var(--line);flex:none}
+#views{display:flex;min-width:0;min-height:0;position:relative;background:#101114}
+.view{position:relative;min-width:0;overflow:hidden;flex:1 1 0}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#split{width:6px;background:var(--line);cursor:col-resize;flex:none;position:relative}
+#split:hover{background:#4a4d57}
+.vbar{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:4px;align-items:center;z-index:2;pointer-events:none;flex-wrap:wrap}
+.vbar>*{pointer-events:auto}
+.vbar select{width:auto}
+.vbar button,.vbar select{background:rgba(29,30,36,.88);backdrop-filter:blur(6px)}
+.vbar .tag{background:rgba(29,30,36,.88);padding:5px 8px;border-radius:6px;color:var(--mute);border:1px solid var(--line)}
+.vbar button.on{background:var(--acc)}
+.hint{position:absolute;bottom:8px;left:8px;color:var(--mute);font-size:11px;pointer-events:none;background:rgba(20,21,25,.7);padding:3px 7px;border-radius:5px}
+footer{display:flex;align-items:center;gap:14px;padding:0 10px;background:var(--panel);border-top:1px solid var(--line);color:var(--mute);font-size:11px;white-space:nowrap;overflow:hidden}
+footer b{color:var(--text);font-weight:600}
+/* color picker */
+#sv{width:100%;height:150px;border-radius:6px;display:block;cursor:crosshair;touch-action:none}
+#hue{width:100%;height:14px;border-radius:7px;display:block;margin-top:7px;cursor:pointer;touch-action:none}
+.cprow{display:flex;gap:6px;align-items:center;margin-top:7px}
+.cprow .cur{width:30px;height:24px;border-radius:5px;border:1px solid var(--line);flex:none}
+.recents{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:7px}
+.recents div{aspect-ratio:1;border-radius:3px;border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.ptarget{font-size:11px;color:var(--mute);font-weight:400;text-transform:none;letter-spacing:0}
+.ptarget b{color:var(--acc)}
+/* channels */
+.ch{border:1px solid var(--line);border-radius:7px;padding:6px 7px;margin-bottom:5px;background:var(--panel2)}
+.ch.paint{border-color:rgba(255,138,61,.55);background:#2a2620}
+.chtop{display:flex;align-items:center;gap:7px}
+.chtop .nm{flex:1;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chtop .sw{width:22px;height:22px;border-radius:5px;border:1px solid rgba(255,255,255,.15);cursor:pointer;flex:none}
+.chtop .sw.tgt{outline:2px solid var(--acc);outline-offset:1px}
+.chtop input{accent-color:var(--acc);width:15px;height:15px;margin:0;cursor:pointer}
+.ib{padding:3px 6px;font-size:11px;border-radius:5px}
+.ib.on{background:#3a3d47;color:var(--text);border-color:#5a5e6a;font-weight:400}
+.chval{display:grid;grid-template-columns:1fr 40px;gap:6px;align-items:center;margin-top:5px}
+.chval span{color:var(--mute);text-align:right;font-variant-numeric:tabular-nums}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(5,6,8,.6);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:300px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{margin:0;padding:14px 16px;font-size:14px;border-bottom:1px solid var(--line)}
+.modal .body{padding:14px 16px;display:grid;gap:10px}
+.modal .foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:6px;justify-content:flex-end}
+.fgrid{display:grid;grid-template-columns:120px 1fr;gap:8px 10px;align-items:center}
+.fgrid label{color:var(--mute)}
+.note{color:var(--mute);font-size:11.5px;line-height:1.45}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.keys kbd{background:var(--panel3);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font:11px ui-monospace,monospace;color:var(--text);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:#2d3038;border:1px solid #444854;color:var(--text);padding:8px 14px;border-radius:8px;z-index:60;box-shadow:0 8px 30px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none}
+.trimwin{position:fixed;top:96px;left:300px;width:310px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 44px rgba(0,0,0,.5);z-index:40;font-size:12px}
+.trimwin.min .twbody{display:none}
+.twhead{display:flex;align-items:center;gap:6px;padding:7px 8px 7px 12px;border-bottom:1px solid var(--line);cursor:move;user-select:none}
+.twhead b{color:var(--acc)}
+.twhead button{padding:2px 8px}
+.twbody{overflow-y:auto;padding:4px 10px 10px}
+.tsec{border-bottom:1px solid var(--line);padding:8px 0}
+.tsec:last-child{border-bottom:0}
+.tsec h4{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--mute)}
+.tsec .chk{margin:4px 0}
+.row1{display:flex;align-items:center;gap:6px;margin:4px 0}
+.row1>label{color:var(--mute);min-width:52px}
+.btns{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.drop{position:fixed;inset:0;border:3px dashed var(--acc);background:rgba(255,138,61,.08);z-index:70;display:none;place-items:center;font-size:18px;font-weight:700;color:var(--acc);pointer-events:none}
+@media (max-width:1100px){
+  #main{grid-template-columns:46px 210px minmax(0,1fr) 250px}
+}
+@media (max-width:820px){
+  #main{grid-template-columns:46px minmax(0,1fr)}
+  #left,#right{display:none}
+  body.showpanels #left,body.showpanels #right{display:block;position:fixed;top:40px;bottom:24px;z-index:20;width:260px}
+  body.showpanels #left{left:46px} body.showpanels #right{right:0}
+}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+/* ---- iPad / tactile ---- */
+html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#app{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);grid-template-rows:auto 1fr 24px}
+@media (pointer:coarse){
+  header{min-height:52px;gap:6px}
+  button{padding:9px 13px;min-height:40px;font-size:13px}
+  #bUndo,#bRedo{font-size:20px;min-width:48px}
+  .tool{min-width:42px;min-height:42px}
+  #main{grid-template-columns:56px 260px minmax(0,1fr) 290px}
+  input[type=range]{height:28px}
+  input[type=range]::-webkit-slider-thumb{width:22px;height:22px}
+  input[type=checkbox]{width:20px;height:20px}
+  select{min-height:36px;font-size:13px}
+}
+@media (pointer:coarse) and (max-width:900px){ #main{grid-template-columns:56px 220px minmax(0,1fr) 250px} }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">Paint<b>Me</b></div>
+    <button id="bNew" title="Nouvelle texture (Ctrl+N)">Nouveau</button>
+    <button id="bOpen" title="Ouvrir un projet .paintme (Ctrl+O)">Ouvrir</button>
+    <button id="bSave" title="Enregistrer le projet (Ctrl+S)">Enregistrer</button>
+    <div class="sep"></div>
+    <button id="bImport" title="Importer une image dans le canal affiché en 2D">Importer image</button>
+    <button id="bResize" title="Changer la résolution">Résolution</button>
+    <button id="bExport" class="primary" title="Exporter les maps (Ctrl+E)">Exporter</button>
+    <div class="sep"></div>
+    <button id="bUndo" class="ghost" title="Annuler (Ctrl+Z)">↶</button>
+    <button id="bRedo" class="ghost" title="Rétablir (Ctrl+Y)">↷</button>
+    <div class="grow"></div>
+    <button id="bPanels" class="ghost" title="Afficher/masquer les panneaux (Tab)">Panneaux</button>
+    <button id="lay2" title="Vue 2D seule">2D</button>
+    <button id="lay23" class="on" title="2D + 3D">2D | 3D</button>
+    <button id="lay3" title="Vue 3D seule">3D</button>
+    <div class="sep"></div>
+    <button id="bHelp" class="ghost" title="Raccourcis (?)">?</button>
+  </header>
+
+  <div id="main">
+    <nav id="tools">
+      <button class="tool on" data-tool="brush" title="Pinceau (B)"><svg viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L10 19c-1.2 1.2-3.6 1.5-6 1 .5-2.4.2-4.8 1.4-6z"/><path d="M12.5 6.5l5 5"/></svg></button>
+      <button class="tool" data-tool="eraser" title="Gomme : ramène les canaux actifs à leur valeur de fond (E)"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4.5 15.5l9-9a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L11 19H8z"/><path d="M9 11l5 5"/></svg></button>
+      <button class="tool" data-tool="smudge" title="Estompe / doigt (S)"><svg viewBox="0 0 24 24"><path d="M9 13V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M15 11.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-2L9 15"/></svg></button>
+      <button class="tool" data-tool="blur" title="Flou (R)"><svg viewBox="0 0 24 24"><path d="M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></svg></button>
+      <button class="tool" data-tool="picker" title="Pipette (I ou Alt maintenu)"><svg viewBox="0 0 24 24"><path d="M14 6l4 4"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L17 9l-2-2z"/><path d="M15 8L6 17l-1 3 3-1 9-9"/></svg></button>
+      <div class="tsep"></div>
+      <button class="tool" id="tFill" title="Remplir les canaux actifs avec leur valeur (G)"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M5 11h14"/><path d="M20 15c0 1.5-1 2.5-1 3.5a1 1 0 0 0 2 0c0-1-1-2-1-3.5z"/></svg></button>
+      <button class="tool" id="tSwapView" title="Afficher le canal suivant en 2D (C)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="10" height="10" rx="2"/><rect x="10" y="10" width="10" height="10" rx="2"/></svg></button>
+    </nav>
+
+    <aside class="panel" id="left">
+      <div class="sec">
+        <h3>Préréglages</h3>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="sec" id="secBrush">
+        <h3>Brush</h3>
+        <div id="brushRows"></div>
+      </div>
+      <div class="sec">
+        <h3>Forme</h3>
+        <div class="tipwrap">
+          <canvas id="tipPrev" width="112" height="112"></canvas>
+          <div style="flex:1;display:grid;gap:5px">
+            <select id="tipSel">
+              <option value="round">Rond</option>
+              <option value="square">Carré</option>
+              <option value="chalk">Craie / grain</option>
+              <option value="bristle">Poils</option>
+              <option value="splat">Éclaboussure</option>
+              <option value="custom">Perso (image)</option>
+            </select>
+            <button id="bTipImport" title="PNG : blanc/transparent = rien, noir/opaque = peinture">Importer une forme…</button>
+          </div>
+        </div>
+        <div id="tipRows" style="margin-top:6px"></div>
+      </div>
+      <div class="sec">
+        <h3>Stylet</h3>
+        <div class="row2">
+          <label class="chk"><input type="checkbox" id="pSize"> Pression → taille</label>
+          <label class="chk"><input type="checkbox" id="pOpac"> Pression → opacité</label>
+        </div>
+        <div id="penRows"></div>
+        <div class="note" id="penInfo">Aucun stylet détecté pour l'instant.</div>
+      </div>
+    </aside>
+
+    <section id="views">
+      <div class="view" id="v2d">
+        <canvas id="c2d"></canvas>
+        <div class="vbar">
+          <select id="viewSel" title="Canal affiché en 2D"></select>
+          <button id="bTiled" class="on" title="Afficher la texture répétée pour voir les raccords (T)">Tuiles</button>
+          <button id="bFit" title="Recadrer (F)">Recadrer</button>
+          <span class="tag" id="zoomTag">100%</span>
+        </div>
+        <div class="hint">Molette : zoom · Espace/clic milieu/clic droit : déplacer · Alt : pipette</div>
+      </div>
+      <div id="split" title="Glisser pour redimensionner"></div>
+      <div class="view" id="v3d">
+        <canvas id="c3d"></canvas>
+        <div class="vbar">
+          <select id="meshSel" title="Objet de prévisualisation">
+            <option value="sphere">Sphère</option>
+            <option value="cube">Cube</option>
+            <option value="plane">Plan</option>
+            <option value="cylinder">Cylindre</option>
+            <option value="torus">Tore</option>
+            <option value="rock">Rocher</option>
+            <option value="custom" disabled>Modèle importé</option>
+          </select>
+          <select id="view3Sel" title="Canal affiché en 3D (V)"><option value="final">Rendu final</option><option value="follow">Comme la 2D</option><option value="color">Base Color</option><option value="rough">Roughness</option><option value="metal">Metallic</option><option value="height">Height</option><option value="emit">Emissive</option><option value="alpha">Opacity / masque</option></select>
+          <button id="bModel" title="Charger un modèle .glb / .gltf / .obj / .fbx">Charger modèle…</button>
+          <button id="bPaint3D" title="Peindre directement sur l'objet 3D (P). Clic droit = tourner">Peindre en 3D</button>
+          <button id="bRotate" title="Rotation automatique">Rotation</button>
+          <button id="bTrim" title="Mode Trimsheet route : peindre les bords de route en 3D">Trimsheet route</button>
+        </div>
+        <div class="hint" id="hint3d">Clic gauche : tourner · clic droit : déplacer · molette : zoom</div>
+      </div>
+    </section>
+
+    <aside class="panel" id="right">
+      <div class="sec">
+        <h3>Couleur <span class="grow"></span><span class="ptarget" id="ptarget"></span></h3>
+        <canvas id="sv" width="512" height="300"></canvas>
+        <canvas id="hue" width="512" height="28"></canvas>
+        <div class="cprow">
+          <div class="cur" id="curSw"></div>
+          <input type="text" id="hexIn" maxlength="7" spellcheck="false">
+          <input type="color" id="nativeCol" title="Sélecteur système">
+        </div>
+        <div class="recents" id="recents"></div>
+      </div>
+      <div class="sec">
+        <h3>Canaux <span class="grow"></span><span class="ptarget">case = peint</span></h3>
+        <div id="chList"></div>
+        <div class="note">Coche plusieurs canaux pour les peindre <b>en même temps</b> avec un seul coup de brush (ex. couleur + roughness + height).</div>
+      </div>
+      <div class="sec">
+        <h3>Tiling</h3>
+        <div class="row2">
+          <label class="chk"><input type="checkbox" id="wrapX" checked> Raccord horizontal</label>
+          <label class="chk"><input type="checkbox" id="wrapY" checked> Raccord vertical</label>
+        </div>
+        <div class="note">Le brush qui sort d'un bord ressort du bord opposé : la texture reste tileable.</div>
+      </div>
+      <div class="sec">
+        <h3>Aperçu 3D</h3>
+        <div class="row2">
+          <label class="chk"><input type="checkbox" id="unlit"> Unlit (albedo seul)</label>
+          <label class="chk"><input type="checkbox" id="alphaCut"> Découpe alpha</label>
+        </div>
+        <div id="r3dRows"></div>
+        <div class="row2"><label class="chk"><input type="checkbox" id="showGrid"> Afficher la grille</label></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <span id="stDoc"></span>
+    <span id="stTool"></span>
+    <span id="stPos"></span>
+    <span class="grow"></span>
+    <span id="stMem"></span>
+  </footer>
+</div>
+<div class="drop" id="drop">Dépose ton image, ton modèle ou ton projet</div>
+<input type="file" id="fileAny" hidden>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =========================================================================
+   Utils
+   ========================================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const mod = (a, n) => ((a % n) + n) % n;
+const lerp = (a, b, t) => a + (b - a) * t;
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    const v = attrs[k];
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function hexToRgb(h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rgbToHex(r, g, b) { return '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join(''); }
+function hsvToRgb(h, s, v) {
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return [f(5) * 255, f(3) * 255, f(1) * 255];
+}
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; if (h < 0) h += 360; }
+  return [h, mx ? d / mx : 0, mx];
+}
+let toastT;
+function toast(msg, ms = 2200) {
+  let t = $('.toast'); if (!t) { t = el('div', { class: 'toast' }); document.body.append(t); }
+  t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, ms);
+}
+function download(blob, name) {
+  if (/iPad|iPhone|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document && navigator.canShare) {
+    try {
+      const f = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+      if (navigator.canShare({ files: [f] })) { navigator.share({ files: [f] }).catch(err => { if (err.name !== 'AbortError') downloadLink(blob, name); }); return; }
+    } catch (_) {}
+  }
+  downloadLink(blob, name);
+}
+function downloadLink(blob, name) {
+  const a = el('a', { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const canvasToBlob = (c, type = 'image/png') => new Promise(r => c.toBlob(r, type));
+const blobToDataURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+function loadImage(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+function pickFile(accept) {
+  return new Promise(res => {
+    const f = $('#fileAny'); f.accept = accept; f.value = '';
+    f.onchange = () => res(f.files[0] || null); f.click();
+  });
+}
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+
+/* =========================================================================
+   Document & channels
+   ========================================================================= */
+const SIZES = [64, 128, 256, 512, 1024, 2048, 4096];
+const CH_DEFS = [
+  { id: 'color',  name: 'Base Color', short: 'BaseColor', type: 'rgb',  def: '#808080', value: '#c8693a', paint: true },
+  { id: 'rough',  name: 'Roughness',  short: 'Roughness', type: 'gray', def: 0.75, value: 0.45, paint: false },
+  { id: 'metal',  name: 'Metallic',   short: 'Metallic',  type: 'gray', def: 0,    value: 1,    paint: false },
+  { id: 'height', name: 'Height',     short: 'Height',    type: 'gray', def: 0.5,  value: 1,    paint: false },
+  { id: 'emit',   name: 'Emissive',   short: 'Emissive',  type: 'rgb',  def: '#000000', value: '#ffb347', paint: false },
+  { id: 'alpha',  name: 'Opacity',    short: 'Opacity',   type: 'gray', def: 1,    value: 0,    paint: false },
+];
+const ORDER = CH_DEFS.map(d => d.id);
+const CH = {};
+for (const d of CH_DEFS) CH[d.id] = { ...d };
+
+const S = {
+  W: 1024, H: 1024, name: 'texture',
+  tool: 'brush',
+  wrapX: true, wrapY: true, tiled: true,
+  viewCh: 'color',
+  brush: { size: 40, opacity: 1, flow: 0.85, hardness: 0.75, spacing: 0.1, smoothing: 0.25, strength: 0.6,
+           tip: 'round', angle: 0, follow: false, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0,
+           pSize: true, pOpac: false, pCurve: 1, pMin: 0.1, roundness: 1 },
+};
+let dirtyDoc = false;
+let mask, mctx;
+
+function valCss(ch, v) {
+  if (ch.type === 'rgb') return v;
+  const g = Math.round(clamp(v, 0, 1) * 255); return `rgb(${g},${g},${g})`;
+}
+
+function createDoc(w, h, name, bgHex) {
+  S.W = w; S.H = h; if (name) S.name = name;
+  if (bgHex) CH.color.def = bgHex;
+  for (const id of ORDER) {
+    const ch = CH[id];
+    ch.canvas = mkCanvas(w, h); ch.ctx = ch.canvas.getContext('2d');
+    ch.ctx.imageSmoothingQuality = 'high';
+    ch.snap = null; ch.texDirty = true;
+    ch.ctx.fillStyle = valCss(ch, ch.def); ch.ctx.fillRect(0, 0, w, h);
+  }
+  mask = mkCanvas(w, h); mctx = mask.getContext('2d'); mctx.imageSmoothingQuality = 'high';
+  undoStack.length = 0; redoStack.length = 0; undoBytes = 0;
+  rebuildTextures(); fitView(); updateStatus(); refreshUndoBtns();
+  dirtyDoc = false;
+}
+
+function resizeDoc(w, h) {
+  for (const id of ORDER) {
+    const ch = CH[id]; const c = mkCanvas(w, h); const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high'; x.drawImage(ch.canvas, 0, 0, w, h);
+    ch.canvas = c; ch.ctx = x; ch.snap = null; ch.texDirty = true;
+  }
+  S.W = w; S.H = h;
+  mask = mkCanvas(w, h); mctx = mask.getContext('2d'); mctx.imageSmoothingQuality = 'high';
+  undoStack.length = 0; redoStack.length = 0; undoBytes = 0;
+  rebuildTextures(); fitView(); updateStatus(); refreshUndoBtns(); dirtyDoc = true;
+}
+
+/* =========================================================================
+   Undo / redo  (stores cropped before/after of the touched region)
+   ========================================================================= */
+const undoStack = [], redoStack = [];
+let undoBytes = 0;
+const UNDO_MAX_STEPS = 60, UNDO_MAX_BYTES = 1.2e9;
+
+function beginEdit(chs) {
+  for (const ch of chs) {
+    if (!ch.snap || ch.snap.width !== S.W || ch.snap.height !== S.H) { ch.snap = mkCanvas(S.W, S.H); ch.sctx = ch.snap.getContext('2d'); }
+    ch.sctx.clearRect(0, 0, S.W, S.H); ch.sctx.drawImage(ch.canvas, 0, 0);
+  }
+  return { chs, bbox: null };
+}
+function bboxAdd(ed, x0, y0, x1, y1) {
+  if (!ed.bbox) ed.bbox = { x0, y0, x1, y1 };
+  else { const b = ed.bbox; b.x0 = Math.min(b.x0, x0); b.y0 = Math.min(b.y0, y0); b.x1 = Math.max(b.x1, x1); b.y1 = Math.max(b.y1, y1); }
+}
+function crop(src, x, y, w, h) { const c = mkCanvas(w, h); c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, w, h); return c; }
+function endEdit(ed, label) {
+  if (!ed.bbox) return;
+  const { x0, y0, x1, y1 } = ed.bbox; const w = x1 - x0, h = y1 - y0;
+  if (w <= 0 || h <= 0) return;
+  const items = ed.chs.map(ch => ({ ch, before: crop(ch.snap, x0, y0, w, h), after: crop(ch.canvas, x0, y0, w, h) }));
+  const step = { x: x0, y: y0, w, h, items, label, bytes: w * h * 8 * items.length };
+  undoStack.push(step); undoBytes += step.bytes;
+  for (const s of redoStack) undoBytes -= s.bytes; redoStack.length = 0;
+  while (undoStack.length > UNDO_MAX_STEPS || (undoBytes > UNDO_MAX_BYTES && undoStack.length > 1)) undoBytes -= undoStack.shift().bytes;
+  dirtyDoc = true; refreshUndoBtns();
+}
+function applyStep(step, which) {
+  for (const it of step.items) {
+    const c = it.ch.ctx; c.clearRect(step.x, step.y, step.w, step.h); c.drawImage(it[which], step.x, step.y);
+    it.ch.texDirty = true;
+  }
+  need2D = true; texForce = true; dirtyDoc = true;
+}
+function undo() { if (stroke) return; const s = undoStack.pop(); if (!s) return; applyStep(s, 'before'); redoStack.push(s); refreshUndoBtns(); toast('Annulé : ' + s.label, 900); }
+function redo() { if (stroke) return; const s = redoStack.pop(); if (!s) return; applyStep(s, 'after'); undoStack.push(s); refreshUndoBtns(); toast('Rétabli : ' + s.label, 900); }
+function refreshUndoBtns() { $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; if ($('#stMem')) updateStatus(); }
+
+/* =========================================================================
+   Brush tips
+   ========================================================================= */
+const TIP = 256;
+const tipCanvas = mkCanvas(TIP, TIP);
+let customTipSrc = null; // canvas: white with alpha
+function hash2(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+function vnoise(x, y, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return lerp(lerp(hash2(xi, yi, s), hash2(xi + 1, yi, s), u), lerp(hash2(xi, yi + 1, s), hash2(xi + 1, yi + 1, s), u), v);
+}
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function buildTip() {
+  const b = S.brush, ctx = tipCanvas.getContext('2d');
+  ctx.clearRect(0, 0, TIP, TIP);
+  if (b.tip === 'custom') {
+    if (customTipSrc) ctx.drawImage(customTipSrc, 0, 0, TIP, TIP);
+    drawTipPreview(); return;
+  }
+  const img = ctx.createImageData(TIP, TIP), d = img.data;
+  const hard = Math.min(b.hardness, 0.995), rnd = clamp(b.roundness, 0.05, 1);
+  for (let y = 0; y < TIP; y++) for (let x = 0; x < TIP; x++) {
+    const nx = (x + 0.5) / TIP * 2 - 1, ny = ((y + 0.5) / TIP * 2 - 1) / rnd;
+    let dist = b.tip === 'square' ? Math.max(Math.abs(nx), Math.abs(ny)) : Math.hypot(nx, ny);
+    let a = 0;
+    if (b.tip === 'splat') {
+      const ang = Math.atan2(ny, nx);
+      const rr = 0.62 + 0.28 * vnoise(Math.cos(ang) * 3 + 5, Math.sin(ang) * 3 + 5, 7) + 0.12 * vnoise(Math.cos(ang) * 9, Math.sin(ang) * 9, 3);
+      dist = dist / rr;
+    }
+    if (dist < 1) a = dist <= hard ? 1 : 1 - smooth(0, 1, (dist - hard) / (1 - hard));
+    if (b.tip === 'chalk') {
+      const g = 0.55 * vnoise(x / 7, y / 7, 1) + 0.25 * vnoise(x / 2.5, y / 2.5, 2) + 0.2 * hash2(x, y, 3);
+      a *= smooth(0.38, 0.62, g + (a - 0.55) * 0.55);
+    } else if (b.tip === 'bristle') {
+      const s = 0.65 * vnoise(0.5, ny * 22 + 10, 4) + 0.35 * vnoise(nx * 2, ny * 60, 5);
+      a *= smooth(0.32, 0.6, s) * (0.75 + 0.25 * vnoise(nx * 3, ny * 9, 6));
+    } else if (b.tip === 'splat') {
+      a *= 0.8 + 0.2 * vnoise(x / 9, y / 9, 8);
+      // satellite droplets
+      for (let k = 0; k < 7; k++) {
+        const ang = hash2(k, 1, 9) * 6.283, r0 = 0.72 + hash2(k, 2, 9) * 0.22, rs = 0.04 + hash2(k, 3, 9) * 0.06;
+        const dd = Math.hypot(nx - Math.cos(ang) * r0, ny * rnd - Math.sin(ang) * r0) / rs;
+        if (dd < 1) a = Math.max(a, 1 - smooth(0.6, 1, dd));
+      }
+    }
+    const i = (y * TIP + x) * 4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = clamp(a, 0, 1) * 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  drawTipPreview();
+}
+function drawTipPreview() {
+  const c = $('#tipPrev'), x = c.getContext('2d');
+  x.clearRect(0, 0, c.width, c.height);
+  x.fillStyle = '#0f1013'; x.fillRect(0, 0, c.width, c.height);
+  const t = mkCanvas(TIP, TIP), tx = t.getContext('2d');
+  tx.drawImage(tipCanvas, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ece7df'; tx.fillRect(0, 0, TIP, TIP);
+  x.save(); x.translate(c.width / 2, c.height / 2); x.rotate(S.brush.angle * Math.PI / 180);
+  x.drawImage(t, -c.width * 0.42, -c.height * 0.42, c.width * 0.84, c.height * 0.84); x.restore();
+}
+async function importTip() {
+  const f = await pickFile('image/*'); if (!f) return;
+  const img = await loadImage(URL.createObjectURL(f));
+  const n = TIP, c = mkCanvas(n, n), x = c.getContext('2d');
+  const s = Math.min(n / img.width, n / img.height);
+  x.drawImage(img, (n - img.width * s) / 2, (n - img.height * s) / 2, img.width * s, img.height * s);
+  const id = x.getImageData(0, 0, n, n), d = id.data;
+  let hasAlpha = false; for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { hasAlpha = true; break; }
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255;
+    const a = hasAlpha ? (d[i + 3] / 255) * (1 - lum * 0.0) : 1 - lum;
+    d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = a * 255;
+  }
+  x.putImageData(id, 0, 0); customTipSrc = c;
+  S.brush.tip = 'custom'; $('#tipSel').value = 'custom'; buildTip(); toast('Forme importée');
+}
+
+/* =========================================================================
+   Painting engine
+   ========================================================================= */
+let stroke = null;
+let tmp = mkCanvas(256, 256), tctx = tmp.getContext('2d');
+const work = { a: mkCanvas(64, 64), b: mkCanvas(64, 64) };
+function ensure(c, w, h) { if (c.width < w || c.height < h) { c.width = Math.max(c.width, w); c.height = Math.max(c.height, h); } return c.getContext('2d'); }
+
+function paintTargets() { return ORDER.map(id => CH[id]).filter(c => c.paint); }
+
+function trimChained() { return typeof TRIM !== 'undefined' && TRIM.on; }
+function wrapOffsets(x0, y0, x1, y1, sampling) {
+  if (trimChained()) { // haut de la colonne k  <->  bas de la colonne k+1 (texture y = (1 - v) * H)
+    const N = TRIM.cols, cw = S.W / N, col = clamp(Math.floor(((x0 + x1) / 2) / cw), 0, N - 1), out = [[0, 0]], sg = sampling ? -1 : 1;
+    if (y0 < 0) out.push([sg * (col === N - 1 ? -(N - 1) * cw : cw), sg * S.H]);
+    if (y1 > S.H) out.push([sg * (col === 0 ? (N - 1) * cw : -cw), -sg * S.H]);
+    return out;
+  }
+  const xs = [0], ys = [0];
+  if (S.wrapX) { if (x0 < 0) xs.push(S.W); if (x1 > S.W) xs.push(-S.W); }
+  if (S.wrapY) { if (y0 < 0) ys.push(S.H); if (y1 > S.H) ys.push(-S.H); }
+  const out = []; for (const ox of xs) for (const oy of ys) out.push([ox, oy]); return out;
+}
+function wrapPos(x, y) {
+  if (trimChained()) {
+    const N = TRIM.cols, cw = S.W / N; x = mod(x, S.W);
+    while (y < 0) { y += S.H; x = mod(x + cw, S.W); }
+    while (y >= S.H) { y -= S.H; x = mod(x - cw, S.W); }
+    return [x, y];
+  }
+  return [(S.wrapX || S.tiled) ? mod(x, S.W) : x, (S.wrapY || S.tiled) ? mod(y, S.H) : y];
+}
+function addRect(list, x, y, w, h) {
+  const r = { x0: Math.max(0, Math.floor(x)), y0: Math.max(0, Math.floor(y)), x1: Math.min(S.W, Math.ceil(x + w)), y1: Math.min(S.H, Math.ceil(y + h)) };
+  if (r.x1 <= r.x0 || r.y1 <= r.y0) return;
+  for (const q of list) {
+    if (r.x0 <= q.x1 && r.x1 >= q.x0 && r.y0 <= q.y1 && r.y1 >= q.y0) {
+      q.x0 = Math.min(q.x0, r.x0); q.y0 = Math.min(q.y0, r.y0); q.x1 = Math.max(q.x1, r.x1); q.y1 = Math.max(q.y1, r.y1); return;
+    }
+  }
+  list.push(r);
+}
+function pressureCurve(p) {
+  const b = S.brush; p = clamp(p, 0, 1);
+  return Math.pow(p, b.pCurve);
+}
+function dabSize(p) { const b = S.brush; return Math.max(0.5, b.size * (b.pSize ? lerp(b.pMin, 1, p) : 1)); }
+
+// sample a (wrapped) region of src into dst canvas, scaled to dw x dh
+function sampleWrapped(src, x0, y0, sw, sh, dctx, dw, dh) {
+  const kx = dw / sw, ky = dh / sh;
+  dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalAlpha = 1; dctx.globalCompositeOperation = 'source-over'; dctx.filter = 'none';
+  dctx.clearRect(0, 0, dw, dh);
+  for (const [ox, oy] of wrapOffsets(x0, y0, x0 + sw, y0 + sh, true)) {
+    dctx.setTransform(kx, 0, 0, ky, -(x0 - ox) * kx, -(y0 - oy) * ky);
+    dctx.drawImage(src, 0, 0);
+  }
+  dctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function startStroke(x, y, rawP, opts = {}) {
+  const chs = paintTargets();
+  if (!chs.length) { toast('Aucun canal coché : coche au moins un canal à peindre (panneau de droite)'); return false; }
+  const tool = S.tool;
+  const p = pressureCurve(rawP);
+  stroke = { tool, ed: beginEdit(chs), chs, x, y, p, rem: 0, sx: x, sy: y, pending: [], from3D: !!opts.from3D, lastAngle: 0, moved: false };
+  if (tool === 'brush' || tool === 'eraser') {
+    mctx.setTransform(1, 0, 0, 1, 0, 0); mctx.globalAlpha = 1; mctx.clearRect(0, 0, S.W, S.H);
+    if (tool === 'brush' && CH.color.paint) addRecent(CH.color.value);
+  }
+  if (tool === 'smudge') {
+    const D = Math.max(4, Math.min(512, Math.ceil(S.brush.size)));
+    stroke.D = D;
+    for (const ch of chs) {
+      ch.carry = mkCanvas(D, D);
+      const [wx, wy] = wrapPos(x, y); const s = dabSize(p);
+      sampleWrapped(ch.canvas, wx - s / 2, wy - s / 2, s, s, ch.carry.getContext('2d'), D, D);
+    }
+  }
+  dab(x, y, p, 0);
+  stroke.rem = Math.max(0.5, dabSize(p) * S.brush.spacing);
+  flush();
+  return true;
+}
+
+function strokeTo(x, y, rawP) {
+  const st = stroke; if (!st) return;
+  const p = pressureCurve(rawP);
+  // stabilizer
+  const k = 1 - clamp(S.brush.smoothing, 0, 0.97);
+  st.sx += (x - st.sx) * k; st.sy += (y - st.sy) * k;
+  const tx = st.sx, ty = st.sy;
+  let dx = tx - st.x, dy = ty - st.y;
+  if (st.from3D && (Math.abs(dx) > S.W / 2 || Math.abs(dy) > S.H / 2)) { // crossed a UV seam
+    st.x = st.sx = x; st.y = st.sy = y; st.p = p; return;
+  }
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-6) return;
+  const ang = Math.atan2(dy, dx);
+  let t = st.rem;
+  while (t <= d) {
+    const f = t / d, pp = lerp(st.p, p, f);
+    dab(st.x + dx * f, st.y + dy * f, pp, ang);
+    t += Math.max(0.5, dabSize(pp) * S.brush.spacing);
+  }
+  st.rem = t - d; st.x = tx; st.y = ty; st.p = p; st.lastAngle = ang; st.moved = true;
+}
+
+function dab(x, y, p, dirAngle) {
+  const b = S.brush, st = stroke;
+  let size = dabSize(p);
+  if (b.sizeJit) size *= 1 - Math.random() * b.sizeJit;
+  if (b.scatter) { const a = Math.random() * 6.283, r = Math.random() * b.scatter * size; x += Math.cos(a) * r; y += Math.sin(a) * r; }
+  let angle = b.angle * Math.PI / 180;
+  if (b.follow) angle += dirAngle;
+  if (b.angleJit) angle += (Math.random() * 2 - 1) * b.angleJit * Math.PI;
+  [x, y] = wrapPos(x, y);
+  const r = size / 2, rr = angle ? r * 1.415 : r;
+
+  if (st.tool === 'brush' || st.tool === 'eraser') {
+    let alpha = b.flow * (b.pOpac ? lerp(0.05, 1, p) : 1);
+    if (b.opacJit) alpha *= 1 - Math.random() * b.opacJit;
+    mctx.globalAlpha = clamp(alpha, 0, 1);
+    for (const [ox, oy] of wrapOffsets(x - rr, y - rr, x + rr, y + rr)) {
+      const cx = x + ox, cy = y + oy;
+      if (angle) { const c = Math.cos(angle), s = Math.sin(angle); mctx.setTransform(c, s, -s, c, cx, cy); mctx.drawImage(tipCanvas, -r, -r, size, size); mctx.setTransform(1, 0, 0, 1, 0, 0); }
+      else mctx.drawImage(tipCanvas, cx - r, cy - r, size, size);
+      addRect(st.pending, cx - rr - 1, cy - rr - 1, rr * 2 + 2, rr * 2 + 2);
+    }
+    mctx.globalAlpha = 1;
+  } else if (st.tool === 'smudge') {
+    const D = st.D, strength = clamp(b.strength * (b.pOpac ? lerp(0.1, 1, p) : 1), 0, 0.99);
+    const wa = ensure(work.a, D, D), wb = ensure(work.b, D, D);
+    for (const ch of st.chs) {
+      // masked carry -> work.a
+      wa.setTransform(1, 0, 0, 1, 0, 0); wa.globalCompositeOperation = 'source-over'; wa.globalAlpha = 1;
+      wa.clearRect(0, 0, D, D); wa.drawImage(ch.carry, 0, 0);
+      wa.globalCompositeOperation = 'destination-in';
+      if (angle) { const c = Math.cos(angle), s = Math.sin(angle); wa.setTransform(c, s, -s, c, D / 2, D / 2); wa.drawImage(tipCanvas, -D / 2, -D / 2, D, D); wa.setTransform(1, 0, 0, 1, 0, 0); }
+      else wa.drawImage(tipCanvas, 0, 0, D, D);
+      wa.globalCompositeOperation = 'source-over';
+      ch.ctx.globalAlpha = strength;
+      for (const [ox, oy] of wrapOffsets(x - r, y - r, x + r, y + r)) {
+        ch.ctx.drawImage(work.a, 0, 0, D, D, x - r + ox, y - r + oy, size, size);
+        addRect(st.pending, x - r + ox - 1, y - r + oy - 1, size + 2, size + 2);
+      }
+      ch.ctx.globalAlpha = 1;
+      // pick up paint
+      sampleWrapped(ch.canvas, x - r, y - r, size, size, wb, D, D);
+      const cc = ch.carry.getContext('2d'); cc.globalAlpha = 1 - strength * 0.92; cc.drawImage(work.b, 0, 0, D, D, 0, 0, D, D); cc.globalAlpha = 1;
+    }
+  } else if (st.tool === 'blur') {
+    const strength = clamp(b.strength * (b.pOpac ? lerp(0.1, 1, p) : 1), 0, 1);
+    const rad = Math.max(0.6, size * 0.08);
+    const pad = Math.ceil(rad * 3), n = Math.ceil(size + pad * 2);
+    if (n > 2048) return;
+    const wa = ensure(work.a, n, n), wb = ensure(work.b, n, n);
+    for (const ch of st.chs) {
+      sampleWrapped(ch.canvas, x - r - pad, y - r - pad, n, n, wa, n, n);
+      wb.setTransform(1, 0, 0, 1, 0, 0); wb.globalAlpha = 1; wb.globalCompositeOperation = 'source-over';
+      wb.clearRect(0, 0, n, n); wb.filter = `blur(${rad.toFixed(2)}px)`; wb.drawImage(work.a, 0, 0, n, n, 0, 0, n, n); wb.filter = 'none';
+      wb.globalCompositeOperation = 'destination-in';
+      wb.drawImage(tipCanvas, pad, pad, size, size);
+      wb.globalCompositeOperation = 'source-over';
+      ch.ctx.globalAlpha = strength;
+      for (const [ox, oy] of wrapOffsets(x - r, y - r, x + r, y + r)) {
+        ch.ctx.drawImage(work.b, pad, pad, size, size, x - r + ox, y - r + oy, size, size);
+        addRect(st.pending, x - r + ox - 1, y - r + oy - 1, size + 2, size + 2);
+      }
+      ch.ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function composeRect(ch, x, y, w, h, css, opacity) {
+  const t = ensure(tmp, w, h);
+  t.globalCompositeOperation = 'source-over'; t.globalAlpha = 1;
+  t.clearRect(0, 0, w, h); t.fillStyle = css; t.fillRect(0, 0, w, h);
+  t.globalCompositeOperation = 'destination-in'; t.drawImage(mask, x, y, w, h, 0, 0, w, h);
+  t.globalCompositeOperation = 'source-over';
+  const c = ch.ctx;
+  c.globalAlpha = 1; c.clearRect(x, y, w, h); c.drawImage(ch.snap, x, y, w, h, x, y, w, h);
+  c.globalAlpha = opacity; c.drawImage(tmp, 0, 0, w, h, x, y, w, h); c.globalAlpha = 1;
+}
+
+function flush() {
+  const st = stroke; if (!st || !st.pending.length) return;
+  const rects = st.pending; st.pending = [];
+  for (const r of rects) {
+    const w = r.x1 - r.x0, h = r.y1 - r.y0;
+    bboxAdd(st.ed, r.x0, r.y0, r.x1, r.y1);
+    if (st.tool === 'brush' || st.tool === 'eraser') {
+      for (const ch of st.chs) composeRect(ch, r.x0, r.y0, w, h, valCss(ch, st.tool === 'eraser' ? ch.def : ch.value), S.brush.opacity);
+    }
+  }
+  for (const ch of st.chs) ch.texDirty = true;
+  need2D = true;
+}
+
+function endStroke() {
+  if (!stroke) return;
+  flush();
+  const label = { brush: 'Pinceau', eraser: 'Gomme', smudge: 'Estompe', blur: 'Flou' }[stroke.tool];
+  endEdit(stroke.ed, label);
+  for (const ch of stroke.chs) ch.carry = null;
+  stroke = null; texForce = true; need2D = true;
+}
+function cancelStroke() {
+  if (!stroke) return;
+  const b = stroke.ed.bbox;
+  if (b) for (const ch of stroke.chs) {
+    ch.ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    ch.ctx.drawImage(ch.snap, b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0, b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    ch.texDirty = true;
+  }
+  stroke = null; need2D = true; texForce = true;
+}
+
+function pickAt(x, y) {
+  [x, y] = [mod(Math.floor(x), S.W), mod(Math.floor(y), S.H)];
+  let chs = paintTargets(); if (!chs.length) chs = [CH.color];
+  for (const ch of chs) {
+    const d = ch.ctx.getImageData(x, y, 1, 1).data;
+    ch.value = ch.type === 'rgb' ? rgbToHex(d[0], d[1], d[2]) : +(d[0] / 255).toFixed(3);
+  }
+  if (CH[P.target].paint || chs.includes(CH[P.target])) pickerFromHex(CH[P.target].value);
+  renderChannels(); updatePickerUI();
+}
+
+function fillChannels() {
+  const chs = paintTargets(); if (!chs.length) { toast('Aucun canal coché'); return; }
+  const ed = beginEdit(chs);
+  for (const ch of chs) { ch.ctx.globalAlpha = 1; ch.ctx.fillStyle = valCss(ch, ch.value); ch.ctx.fillRect(0, 0, S.W, S.H); ch.texDirty = true; }
+  bboxAdd(ed, 0, 0, S.W, S.H); endEdit(ed, 'Remplissage');
+  need2D = true; texForce = true;
+  toast('Rempli : ' + chs.map(c => c.name).join(', '));
+}
+
+/* =========================================================================
+   2D view
+   ========================================================================= */
+const c2d = $('#c2d'), x2d = c2d.getContext('2d');
+const V = { zoom: 1, ox: 0, oy: 0, mx: -1, my: -1, inside: false };
+let need2D = true;
+function viewSize() { const r = $('#v2d').getBoundingClientRect(); return [r.width, r.height]; }
+function fitView() {
+  const [w, h] = viewSize(); if (!w || !h) return;
+  V.zoom = Math.min((w - 60) / S.W, (h - 90) / S.H);
+  if (V.zoom > 1) V.zoom = Math.pow(2, Math.floor(Math.log2(V.zoom) * 2) / 2);
+  V.ox = (w - S.W * V.zoom) / 2; V.oy = (h - S.H * V.zoom) / 2 + 14; need2D = true;
+}
+function screenToTex(sx, sy) { return [(sx - V.ox) / V.zoom, (sy - V.oy) / V.zoom]; }
+function zoomAt(sx, sy, factor) {
+  const nz = clamp(V.zoom * factor, 0.02, 64);
+  const [tx, ty] = screenToTex(sx, sy);
+  V.zoom = nz; V.ox = sx - tx * nz; V.oy = sy - ty * nz; need2D = true;
+}
+function draw2D() {
+  need2D = false;
+  const dpr = window.devicePixelRatio || 1;
+  const [w, h] = viewSize();
+  const cw = Math.round(w * dpr), chh = Math.round(h * dpr);
+  if (c2d.width !== cw || c2d.height !== chh) { c2d.width = cw; c2d.height = chh; }
+  const g = x2d;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+  g.fillStyle = '#101114'; g.fillRect(0, 0, cw, chh);
+  const ch = CH[S.viewCh];
+  const z = V.zoom * dpr, tw = S.W * z, th = S.H * z, ox = V.ox * dpr, oy = V.oy * dpr;
+  g.imageSmoothingEnabled = V.zoom < 2; g.imageSmoothingQuality = 'high';
+  let i0 = 0, i1 = 0, j0 = 0, j1 = 0;
+  if (S.tiled) {
+    i0 = Math.floor(-ox / tw); i1 = Math.floor((cw - ox) / tw);
+    j0 = Math.floor(-oy / th); j1 = Math.floor((chh - oy) / th);
+    if ((i1 - i0 + 1) * (j1 - j0 + 1) > 400) { i0 = j0 = -2; i1 = j1 = 2; }
+  }
+  // drop shadow for the main tile
+  g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(Math.round(ox) + 4 * dpr, Math.round(oy) + 6 * dpr, Math.round(tw), Math.round(th));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const X0 = Math.round(ox + i * tw), Y0 = Math.round(oy + j * th), X1 = Math.round(ox + (i + 1) * tw), Y1 = Math.round(oy + (j + 1) * th);
+    g.drawImage(ch.canvas, X0, Y0, X1 - X0, Y1 - Y0);
+  }
+  g.lineWidth = 1; g.strokeStyle = S.tiled ? 'rgba(255,138,61,.55)' : 'rgba(255,255,255,.18)';
+  g.setLineDash(S.tiled ? [6 * dpr, 5 * dpr] : []);
+  g.strokeRect(Math.round(ox) + .5, Math.round(oy) + .5, Math.round(tw) - 1, Math.round(th) - 1);
+  g.setLineDash([]);
+  drawTrimGuides(g, ox, oy, tw, th, i0, i1, j0, j1, dpr);
+  // pixel grid when very zoomed
+  if (V.zoom >= 12) {
+    g.strokeStyle = 'rgba(0,0,0,.25)'; g.beginPath();
+    const sx0 = Math.max(0, Math.floor(-ox / z)), sx1 = Math.min(S.W, Math.ceil((cw - ox) / z));
+    const sy0 = Math.max(0, Math.floor(-oy / z)), sy1 = Math.min(S.H, Math.ceil((chh - oy) / z));
+    for (let x = sx0; x <= sx1; x++) { const X = Math.round(ox + x * z) + .5; g.moveTo(X, oy + sy0 * z); g.lineTo(X, oy + sy1 * z); }
+    for (let y = sy0; y <= sy1; y++) { const Y = Math.round(oy + y * z) + .5; g.moveTo(ox + sx0 * z, Y); g.lineTo(ox + sx1 * z, Y); }
+    g.stroke();
+  }
+  // brush cursor
+  if (V.inside && !panning && S.tool !== 'picker' && !altDown) {
+    const r = Math.max(1, S.brush.size / 2 * V.zoom) * dpr, X = V.mx * dpr, Y = V.my * dpr;
+    g.lineWidth = 1.5 * dpr;
+    g.strokeStyle = 'rgba(0,0,0,.65)'; g.beginPath(); g.arc(X, Y, r + 1 * dpr, 0, 7); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(X, Y, r, 0, 7); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.9)'; g.fillRect(X - dpr, Y - dpr, 2 * dpr, 2 * dpr);
+  }
+  $('#zoomTag').textContent = Math.round(V.zoom * 100) + '%';
+}
+
+/* ---- 2D pointer input ---- */
+let panning = null, spaceDown = false, altDown = false, penSeen = false;
+const touches = new Map(); let pinch = null; let gTap = null;
+function evPos(e) { const r = c2d.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function evPressure(e) {
+  if (e.pointerType === 'pen') return e.pressure || 0.0001;
+  if (e.pointerType === 'touch') return e.pressure && e.pressure !== 0.5 ? e.pressure : 1;
+  return 1;
+}
+function notePen(e) {
+  if (e.pointerType === 'pen' && !penSeen) { penSeen = true; try { setPaint3D(S3.paint3D); } catch (_) {} $('#penInfo').textContent = 'Stylet détecté ✓ — pression active. Un doigt = déplacer la vue.'; }
+}
+c2d.addEventListener('contextmenu', e => e.preventDefault());
+c2d.addEventListener('pointerdown', e => {
+  notePen(e);
+  c2d.setPointerCapture(e.pointerId);
+  const [sx, sy] = evPos(e);
+  if (e.pointerType === 'touch') {
+    touches.set(e.pointerId, [sx, sy]);
+    if (touches.size === 1) gTap = { t: performance.now(), max: 1, moved: false, pts: new Map([[e.pointerId, [sx, sy]]]) };
+    else if (gTap) { gTap.max = Math.max(gTap.max, touches.size); gTap.pts.set(e.pointerId, [sx, sy]); }
+    if (touches.size === 3) { pinch = null; return; }
+    if (touches.size === 2) { cancelStroke(); startPinch(); return; }
+    if (penSeen) { panning = { sx, sy, ox: V.ox, oy: V.oy, id: e.pointerId }; return; }
+  }
+  if (e.button === 1 || e.button === 2 || spaceDown) { panning = { sx, sy, ox: V.ox, oy: V.oy, id: e.pointerId }; c2d.style.cursor = 'grabbing'; return; }
+  if (e.button !== 0) return;
+  const [tx, ty] = screenToTex(sx, sy);
+  if (S.tool === 'picker' || e.altKey) { pickAt(tx, ty); stroke = null; picking = true; return; }
+  startStroke(tx, ty, evPressure(e));
+});
+let picking = false;
+c2d.addEventListener('pointermove', e => {
+  const [sx, sy] = evPos(e);
+  V.mx = sx; V.my = sy; V.inside = true;
+  if (e.pointerType === 'touch' && touches.has(e.pointerId)) { touches.set(e.pointerId, [sx, sy]);
+    if (gTap && gTap.pts.has(e.pointerId)) { const p = gTap.pts.get(e.pointerId); if (Math.hypot(sx - p[0], sy - p[1]) > 12) gTap.moved = true; } if (pinch) { updatePinch(); return; } }
+  if (panning) { V.ox = panning.ox + sx - panning.sx; V.oy = panning.oy + sy - panning.sy; need2D = true; return; }
+  const [tx, ty] = screenToTex(sx, sy);
+  updatePos(tx, ty);
+  if (picking) { pickAt(tx, ty); return; }
+  if (stroke && !stroke.from3D) {
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ce of (evs.length ? evs : [e])) { const [a, b] = evPos(ce); const [u, v] = screenToTex(a, b); strokeTo(u, v, evPressure(ce)); }
+    flush();
+  }
+  need2D = true;
+});
+function endPointer(e) {
+  if (e.pointerType === 'touch') {
+    touches.delete(e.pointerId);
+    if (touches.size === 0 && gTap) {
+      const g = gTap; gTap = null;
+      if (g.max >= 2 && !g.moved && performance.now() - g.t < 350) { pinch = null; panning = null; if (g.max === 2) undo(); else redo(); return; }
+    }
+    if (pinch && touches.size < 2) { pinch = null; panning = null; return; }
+    if (touches.size > 0) return;
+  }
+  if (panning) { panning = null; c2d.style.cursor = spaceDown ? 'grab' : 'crosshair'; return; }
+  picking = false;
+  if (stroke && !stroke.from3D) endStroke();
+}
+c2d.addEventListener('pointerup', endPointer);
+c2d.addEventListener('pointercancel', e => { touches.delete(e.pointerId); pinch = null; if (stroke) cancelStroke(); panning = null; });
+c2d.addEventListener('pointerleave', () => { V.inside = false; need2D = true; });
+c2d.addEventListener('wheel', e => {
+  e.preventDefault(); const [sx, sy] = evPos(e);
+  if (e.ctrlKey && Math.abs(e.deltaY) < 50) zoomAt(sx, sy, Math.exp(-e.deltaY * 0.01)); // trackpad pinch
+  else zoomAt(sx, sy, Math.exp(-e.deltaY * 0.0016));
+}, { passive: false });
+function startPinch() {
+  const [a, b] = [...touches.values()];
+  pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, zoom: V.zoom, ox: V.ox, oy: V.oy };
+}
+function updatePinch() {
+  const [a, b] = [...touches.values()];
+  const d = Math.hypot(a[0] - b[0], a[1] - b[1]), cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2;
+  const nz = clamp(pinch.zoom * d / pinch.d, 0.02, 64);
+  const tx = (pinch.cx - pinch.ox) / pinch.zoom, ty = (pinch.cy - pinch.oy) / pinch.zoom;
+  V.zoom = nz; V.ox = cx - tx * nz; V.oy = cy - ty * nz; need2D = true;
+}
+function updatePos(tx, ty) {
+  const x = Math.floor(tx), y = Math.floor(ty);
+  $('#stPos').innerHTML = (x >= 0 && y >= 0 && x < S.W && y < S.H) || S.tiled ? `x <b>${mod(x, S.W)}</b> y <b>${mod(y, S.H)}</b>` : '';
+}
+
+/* =========================================================================
+   3D preview
+   ========================================================================= */
+const c3d = $('#c3d');
+const renderer = new THREE.WebGLRenderer({ canvas: c3d, antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1e2026);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const cam = new THREE.PerspectiveCamera(38, 1, 0.01, 200);
+cam.position.set(2.4, 1.5, 2.9);
+const controls = new OrbitControls(cam, c3d);
+controls.addEventListener('start', () => resize3D.user = true);
+controls.enableDamping = true; controls.dampingFactor = 0.12;
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.6);
+scene.add(keyLight);
+const hemi = new THREE.HemisphereLight(0xdfe6ff, 0x2a2420, 0.25); scene.add(hemi);
+const grid = new THREE.GridHelper(6, 12, 0x555a66, 0x34373f); grid.position.y = -1.25; grid.visible = false; scene.add(grid);
+
+const S3 = { view: 'final', repeatX: 1, repeatY: 1, bump: 1.5, emissive: 1, env: 0.9, light: 1.6, lightAngle: 40, unlit: false, alphaCut: false, rotate: false, paint3D: false, mesh: 'sphere' };
+const litMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 1, side: THREE.DoubleSide, emissive: 0xffffff });
+const unlitMat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+let current = null, customObj = null;
+/* aperçu d'un canal seul en 3D : valeur brute, comme en 2D */
+const viewMat = new THREE.ShaderMaterial({
+  side: THREE.DoubleSide,
+  uniforms: { map: { value: null }, rep: { value: new THREE.Vector2(1, 1) }, isRgb: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; uniform vec2 rep; void main(){ vUv = uv * rep; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `varying vec2 vUv; uniform sampler2D map; uniform float isRgb;
+    vec3 toSrgb(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0/2.4)) - 0.055, step(0.0031308, c)); }
+    void main(){ vec3 c = texture2D(map, vUv).rgb; gl_FragColor = vec4(isRgb > 0.5 ? toSrgb(c) : c, 1.0); }`,
+});
+function view3Ch() { return S3.view === 'follow' ? S.viewCh : S3.view; }
+
+function rebuildTextures() {
+  for (const id of ORDER) {
+    const ch = CH[id];
+    if (ch.tex) ch.tex.dispose();
+    const t = new THREE.CanvasTexture(ch.canvas);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = ch.type === 'rgb' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    ch.tex = t;
+  }
+  applyRepeat(); applyMaterial();
+}
+function applyRepeat() { const on = typeof TRIM !== 'undefined' && TRIM.on; for (const id of ORDER) CH[id].tex && CH[id].tex.repeat.set(on ? 1 : S3.repeatX, on ? 1 : S3.repeatY); }
+function applyMaterial() {
+  litMat.map = CH.color.tex;
+  litMat.roughnessMap = CH.rough.tex;
+  litMat.metalnessMap = CH.metal.tex;
+  litMat.bumpMap = S3.bump > 0 ? CH.height.tex : null; litMat.bumpScale = S3.bump;
+  litMat.emissiveMap = CH.emit.tex; litMat.emissiveIntensity = S3.emissive;
+  litMat.alphaMap = S3.alphaCut ? CH.alpha.tex : null; litMat.alphaTest = S3.alphaCut ? 0.5 : 0;
+  litMat.envMapIntensity = S3.env;
+  unlitMat.map = CH.color.tex;
+  unlitMat.alphaMap = S3.alphaCut ? CH.alpha.tex : null; unlitMat.alphaTest = S3.alphaCut ? 0.5 : 0;
+  litMat.needsUpdate = true; unlitMat.needsUpdate = true;
+  keyLight.intensity = S3.light;
+  const a = S3.lightAngle * Math.PI / 180; keyLight.position.set(Math.cos(a) * 4, 3.5, Math.sin(a) * 4);
+  const vc = view3Ch(), vch = vc !== 'final' ? CH[vc] : null;
+  if (vch) { viewMat.uniforms.map.value = vch.tex; viewMat.uniforms.isRgb.value = vch.type === 'rgb' ? 1 : 0; const tr = typeof TRIM !== 'undefined' && TRIM.on; viewMat.uniforms.rep.value.set(tr ? 1 : S3.repeatX, tr ? 1 : S3.repeatY); }
+  if (current) current.traverse(o => { if (o.isMesh && !o.userData.keepMat) o.material = vch ? viewMat : S3.unlit ? unlitMat : litMat; });
+  if (typeof TB !== 'undefined') TB.uView.value = vch ? ORDER.indexOf(vc) + 1 : 0;
+  applyMaterial.lastView = vc;
+}
+function rockGeo() {
+  const g = new THREE.IcosahedronGeometry(1, 5);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    const n = 0.55 * vnoise(v.x * 1.6 + 3, v.y * 1.6 + v.z * 1.1, 11) + 0.3 * vnoise(v.x * 4 + 7, v.z * 4 + v.y * 2, 12) + 0.15 * vnoise(v.y * 9, v.z * 9 + v.x * 3, 13);
+    v.multiplyScalar(0.78 + n * 0.45); v.y *= 0.72; p.setXYZ(i, v.x, v.y, v.z);
+  }
+  // box-ish projected UVs (planar from dominant axis) for tiling previews
+  g.computeVertexNormals();
+  const uv = g.attributes.uv, nrm = g.attributes.normal;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), ax = Math.abs(nrm.getX(i)), ay = Math.abs(nrm.getY(i)), az = Math.abs(nrm.getZ(i));
+    if (ay >= ax && ay >= az) uv.setXY(i, x * 0.5 + 0.5, z * 0.5 + 0.5);
+    else if (ax >= az) uv.setXY(i, z * 0.5 + 0.5, y * 0.5 + 0.5);
+    else uv.setXY(i, x * 0.5 + 0.5, y * 0.5 + 0.5);
+  }
+  return g;
+}
+function makeMesh(kind) {
+  let g;
+  switch (kind) {
+    case 'plane': g = new THREE.PlaneGeometry(2.2, 2.2); break;
+    case 'cube': g = new THREE.BoxGeometry(1.5, 1.5, 1.5); break;
+    case 'cylinder': g = new THREE.CylinderGeometry(0.8, 0.8, 1.9, 96, 1, true); break;
+    case 'torus': g = new THREE.TorusGeometry(0.85, 0.36, 64, 160); break;
+    case 'rock': g = rockGeo(); break;
+    default: g = new THREE.SphereGeometry(1.1, 128, 72);
+  }
+  return new THREE.Mesh(g, litMat);
+}
+function setMesh(kind) {
+  if (current) scene.remove(current);
+  S3.mesh = kind;
+  current = kind === 'custom' && customObj ? customObj : makeMesh(kind);
+  scene.add(current); applyMaterial();
+  $('#meshSel').value = kind;
+}
+async function loadModel(file) {
+  const name = file.name.toLowerCase(), url = URL.createObjectURL(file);
+  toast('Chargement du modèle…');
+  try {
+    let obj;
+    if (name.endsWith('.glb') || name.endsWith('.gltf')) { const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js'); obj = (await new GLTFLoader().loadAsync(url)).scene; }
+    else if (name.endsWith('.obj')) { const { OBJLoader } = await import('three/addons/loaders/OBJLoader.js'); obj = await new OBJLoader().loadAsync(url); }
+    else if (name.endsWith('.fbx')) { const { FBXLoader } = await import('three/addons/loaders/FBXLoader.js'); obj = await new FBXLoader().loadAsync(url); }
+    else { toast('Format non supporté (glb, gltf, obj, fbx)'); return; }
+    let noUV = false;
+    obj.traverse(o => { if (o.isMesh) { if (!o.geometry.attributes.uv) noUV = true; } });
+    const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    const s = 2.3 / Math.max(size.x, size.y, size.z || 1);
+    const grp = new THREE.Group(); obj.position.sub(ctr); grp.add(obj); grp.scale.setScalar(s);
+    customObj = grp; $('#meshSel').querySelector('[value=custom]').disabled = false;
+    setMesh('custom');
+    toast(noUV ? 'Modèle chargé, mais certaines parties n\'ont pas d\'UV' : 'Modèle chargé : ' + file.name);
+  } catch (err) { console.error(err); toast('Impossible de charger ce modèle'); }
+}
+
+let texForce = false, lastUp = 0;
+function uploadTextures() {
+  const now = performance.now(), px = S.W * S.H;
+  const interval = px >= 4096 * 4096 ? 260 : px >= 2048 * 2048 ? 120 : px >= 1024 * 1024 ? 45 : 16;
+  if (!texForce && now - lastUp < interval) return;
+  for (const id of ORDER) { const ch = CH[id]; if (ch.texDirty) { ch.tex.needsUpdate = true; ch.texDirty = false; } }
+  texForce = false; lastUp = now;
+}
+function resize3D() {
+  const r = $('#v3d').getBoundingClientRect(); if (!r.width || !r.height) return;
+  renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix();
+  const want = 4.1 / Math.min(1, cam.aspect), cur = cam.position.distanceTo(controls.target);
+  if (!resize3D.done || Math.abs(cur - want) > 0.01 && !resize3D.user) { cam.position.sub(controls.target).setLength(want).add(controls.target); resize3D.done = true; }
+}
+function setPaint3D(on) {
+  S3.paint3D = on; $('#bPaint3D').classList.toggle('on', on);
+  controls.mouseButtons = on ? { LEFT: -1, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE } : { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+  controls.touches = on ? { ONE: penSeen ? THREE.TOUCH.ROTATE : -1, TWO: THREE.TOUCH.DOLLY_PAN } : { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  $('#hint3d').textContent = on ? 'Clic gauche : peindre · clic droit : tourner · clic milieu : déplacer · molette : zoom' : 'Clic gauche : tourner · clic droit : déplacer · molette : zoom';
+  c3d.style.cursor = on ? 'crosshair' : 'grab';
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function hit3D(e) {
+  if (!current) return null;
+  const r = c3d.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, cam);
+  const h = ray.intersectObject(current, true).find(i => i.uv && !i.object.userData.noPaint);
+  hit3D.last = h || null;
+  if (!h) return null;
+  if (h.object.userData.blend) return trimBlendTex(h.uv.x, h.uv.y);
+  const tr = typeof TRIM !== 'undefined' && TRIM.on;
+  const u = h.uv.x * (tr ? 1 : S3.repeatX), v = h.uv.y * (tr ? 1 : S3.repeatY);
+  return [mod(u, 1) * S.W, (1 - mod(v, 1)) * S.H];
+}
+c3d.addEventListener('pointerdown', e => {
+  notePen(e);
+  if (e.pointerType === 'touch' && penSeen) return;
+  if (!S3.paint3D || e.button !== 0) return;
+  const t = hit3D(e); if (!t) return;
+  c3d.setPointerCapture(e.pointerId);
+  if (S.tool === 'picker' || e.altKey) { pickAt(t[0], t[1]); return; }
+  startStroke(t[0], t[1], evPressure(e), { from3D: true });
+});
+/* ---- aperçu du pinceau dans l'espace 3D ---- */
+const brushRing = new THREE.Group();
+{
+  const mk = (r0, r1, col, op) => { const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 72), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthTest: false, depthWrite: false, side: THREE.DoubleSide })); m.renderOrder = 999; return m; };
+  brushRing.add(mk(1.0, 1.06, 0x000000, 0.55), mk(0.955, 1.0, 0xffffff, 0.95), mk(0, 0.04, 0xffffff, 0.9));
+  brushRing.visible = false; scene.add(brushRing);
+}
+const _bv = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], _bu = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()], _zAxis = new THREE.Vector3(0, 0, 1);
+function texelWorld(h) {
+  if (typeof TRIM !== 'undefined' && TRIM.on) return (TRIM.mode === 'band' ? TRIM.bandW : TRIM.borderW) / (S.W / TRIM.cols);
+  const g = h.object.geometry, f = h.face, uv = g.attributes.uv, pos = g.attributes.position;
+  if (!f || !uv) return 0.002;
+  const idx = [f.a, f.b, f.c];
+  idx.forEach((i, k) => { _bv[k].fromBufferAttribute(pos, i).applyMatrix4(h.object.matrixWorld); _bu[k].set(uv.getX(i) * S3.repeatX * S.W, uv.getY(i) * S3.repeatY * S.H); });
+  let ws = 0, ts = 0; for (const [i, j] of [[0, 1], [1, 2], [2, 0]]) { ws += _bv[i].distanceTo(_bv[j]); ts += _bu[i].distanceTo(_bu[j]); }
+  return ts > 1e-6 ? ws / ts : 0.002;
+}
+function updateBrushRing(e) {
+  if (!S3.paint3D || (e.buttons & 6) || S.tool === 'picker') { brushRing.visible = false; return; }
+  const t = hit3D(e), h = hit3D.last;
+  if (!h || !h.face) { brushRing.visible = false; return; }
+  const n = h.face.normal.clone().transformDirection(h.object.matrixWorld);
+  if (n.dot(ray.ray.direction) > 0) n.negate();
+  const r = Math.max(1e-4, S.brush.size / 2 * texelWorld(h));
+  brushRing.position.copy(h.point).addScaledVector(n, r * 0.01 + 0.001);
+  brushRing.quaternion.setFromUnitVectors(_zAxis, n);
+  brushRing.scale.setScalar(r);
+  const ok = !!t; brushRing.children[1].material.color.set(ok ? 0xffffff : 0xff6a50);
+  brushRing.visible = true;
+}
+c3d.addEventListener('pointermove', updateBrushRing);
+c3d.addEventListener('pointerleave', () => brushRing.visible = false);
+c3d.addEventListener('pointermove', e => {
+  if (!stroke || !stroke.from3D) return;
+  if (e.pointerType === 'touch' && penSeen) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ce of (evs.length ? evs : [e])) { const t = hit3D(ce); if (t) strokeTo(t[0], t[1], evPressure(ce)); }
+  flush();
+});
+c3d.addEventListener('pointerup', () => { if (stroke && stroke.from3D) endStroke(); });
+c3d.addEventListener('contextmenu', e => e.preventDefault());
+
+/* =========================================================================
+   Main loop
+   ========================================================================= */
+function loop() {
+  uploadTextures(); trimTick();
+  if (S3.view !== 'final' && view3Ch() !== applyMaterial.lastView) applyMaterial();
+  if ($('#v3d').style.display !== 'none') {
+    controls.autoRotate = S3.rotate; controls.autoRotateSpeed = 1.6; controls.update();
+    renderer.render(scene, cam);
+  }
+  if (need2D && $('#v2d').style.display !== 'none') draw2D();
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================================
+   UI: sliders
+   ========================================================================= */
+function slider(parent, o) {
+  // o: {label, min, max, step, get, set, fmt, log, unit, title}
+  const toSlider = v => o.log ? Math.log(v / o.min) / Math.log(o.max / o.min) * 1000 : v;
+  const fromSlider = s => o.log ? o.min * Math.pow(o.max / o.min, s / 1000) : +s;
+  const rng = el('input', { type: 'range', min: o.log ? 0 : o.min, max: o.log ? 1000 : o.max, step: o.log ? 1 : o.step });
+  const num = el('input', { type: 'number', min: o.min, max: o.numMax ?? o.max, step: o.step });
+  const disp = v => o.fmt ? o.fmt(v) : v;
+  const sync = () => { const v = o.get(); rng.value = toSlider(v); num.value = disp(v); };
+  rng.addEventListener('input', () => { let v = fromSlider(rng.value); if (o.step >= 1) v = Math.round(v); o.set(v); num.value = disp(v); });
+  num.addEventListener('change', () => { let v = clamp(+num.value / (o.scale || 1), o.min, o.numMax ?? o.max); o.set(v); sync(); });
+  const row = el('div', { class: 'row', title: o.title || '' }, el('label', {}, o.label), rng, num);
+  parent.append(row); sync(); row.sync = sync; return row;
+}
+const pct = v => Math.round(v * 100);
+const B = S.brush;
+const brushRowsDef = [
+  { label: 'Taille', min: 1, max: 1000, numMax: 2000, step: 1, log: true, get: () => B.size, set: v => { B.size = v; need2D = true; }, title: '[ et ] pour ajuster' },
+  { label: 'Opacité', min: 0, max: 1, step: 0.01, get: () => B.opacity, set: v => B.opacity = v, fmt: pct, scale: 0.01, title: 'Plafond d\'opacité du trait (touches 1–0)' },
+  { label: 'Flux', min: 0.01, max: 1, step: 0.01, get: () => B.flow, set: v => B.flow = v, fmt: pct, scale: 0.01, title: 'Quantité déposée par empreinte (s\'accumule dans le trait)' },
+  { label: 'Dureté', min: 0, max: 1, step: 0.01, get: () => B.hardness, set: v => { B.hardness = v; buildTip(); }, fmt: pct, scale: 0.01, title: 'Maj + [ / ]' },
+  { label: 'Espacement', min: 0.02, max: 2, step: 0.01, get: () => B.spacing, set: v => B.spacing = v, fmt: pct, scale: 0.01 },
+  { label: 'Lissage', min: 0, max: 0.95, step: 0.01, get: () => B.smoothing, set: v => B.smoothing = v, fmt: pct, scale: 0.01, title: 'Stabilisateur de trait (comme StreamLine dans Procreate)' },
+  { label: 'Force', min: 0.01, max: 1, step: 0.01, get: () => B.strength, set: v => B.strength = v, fmt: pct, scale: 0.01, title: 'Force de l\'estompe et du flou' },
+];
+const tipRowsDef = [
+  { label: 'Angle', min: -180, max: 180, step: 1, get: () => B.angle, set: v => { B.angle = v; drawTipPreview(); } },
+  { label: 'Rondeur', min: 0.05, max: 1, step: 0.01, get: () => B.roundness, set: v => { B.roundness = v; buildTip(); }, fmt: pct, scale: 0.01 },
+  { label: 'Var. taille', min: 0, max: 1, step: 0.01, get: () => B.sizeJit, set: v => B.sizeJit = v, fmt: pct, scale: 0.01 },
+  { label: 'Var. angle', min: 0, max: 1, step: 0.01, get: () => B.angleJit, set: v => B.angleJit = v, fmt: pct, scale: 0.01 },
+  { label: 'Var. opacité', min: 0, max: 1, step: 0.01, get: () => B.opacJit, set: v => B.opacJit = v, fmt: pct, scale: 0.01 },
+  { label: 'Dispersion', min: 0, max: 2, step: 0.01, get: () => B.scatter, set: v => B.scatter = v, fmt: pct, scale: 0.01 },
+];
+const penRowsDef = [
+  { label: 'Courbe', min: 0.3, max: 3, step: 0.05, get: () => B.pCurve, set: v => B.pCurve = v, fmt: v => v.toFixed(2), title: '<1 : léger · >1 : appuyé' },
+  { label: 'Taille min', min: 0, max: 1, step: 0.01, get: () => B.pMin, set: v => B.pMin = v, fmt: pct, scale: 0.01 },
+];
+const r3dDef = [
+  { label: 'Répétition U', min: 1, max: 8, step: 1, get: () => S3.repeatX, set: v => { S3.repeatX = v; applyRepeat(); } },
+  { label: 'Répétition V', min: 1, max: 8, step: 1, get: () => S3.repeatY, set: v => { S3.repeatY = v; applyRepeat(); } },
+  { label: 'Relief', min: 0, max: 8, step: 0.1, get: () => S3.bump, set: v => { S3.bump = v; applyMaterial(); }, title: 'Force du canal Height dans l\'aperçu' },
+  { label: 'Émissif', min: 0, max: 5, step: 0.1, get: () => S3.emissive, set: v => { S3.emissive = v; applyMaterial(); } },
+  { label: 'Lumière', min: 0, max: 5, step: 0.1, get: () => S3.light, set: v => { S3.light = v; applyMaterial(); } },
+  { label: 'Angle lum.', min: 0, max: 360, step: 1, get: () => S3.lightAngle, set: v => { S3.lightAngle = v; applyMaterial(); } },
+  { label: 'Ambiance', min: 0, max: 3, step: 0.05, get: () => S3.env, set: v => { S3.env = v; applyMaterial(); } },
+];
+const rowsAll = [];
+function buildPanels() {
+  for (const d of brushRowsDef) rowsAll.push(slider($('#brushRows'), d));
+  for (const d of tipRowsDef) rowsAll.push(slider($('#tipRows'), d));
+  rowsAll.push(el('div'));
+  const follow = el('label', { class: 'chk', style: 'margin:4px 0' }, el('input', { type: 'checkbox', id: 'follow' }), ' Suivre la direction du trait');
+  $('#tipRows').append(follow);
+  $('#follow').addEventListener('change', e => B.follow = e.target.checked);
+  for (const d of penRowsDef) rowsAll.push(slider($('#penRows'), d));
+  for (const d of r3dDef) rowsAll.push(slider($('#r3dRows'), d));
+  $('#pSize').addEventListener('change', e => B.pSize = e.target.checked);
+  $('#pOpac').addEventListener('change', e => B.pOpac = e.target.checked);
+  $('#tipSel').addEventListener('change', e => { if (e.target.value === 'custom' && !customTipSrc) { importTip(); e.target.value = B.tip; return; } B.tip = e.target.value; buildTip(); });
+  $('#bTipImport').addEventListener('click', importTip);
+  // presets
+  for (const p of PRESETS) $('#presets').append(el('button', { title: p.title || '', onclick: () => applyPreset(p) }, p.name));
+}
+function syncBrushUI() {
+  for (const r of rowsAll) r.sync && r.sync();
+  $('#pSize').checked = B.pSize; $('#pOpac').checked = B.pOpac; $('#follow').checked = B.follow; $('#tipSel').value = B.tip;
+}
+const PRESETS = [
+  { name: 'Rond dur', tip: 'round', hardness: 0.9, flow: 1, opacity: 1, spacing: 0.08, pSize: true, pOpac: false, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0, follow: false, roundness: 1 },
+  { name: 'Rond doux', tip: 'round', hardness: 0.05, flow: 0.3, opacity: 1, spacing: 0.06, pSize: false, pOpac: true, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0, follow: false, roundness: 1 },
+  { name: 'Aérographe', tip: 'round', hardness: 0, flow: 0.06, opacity: 1, spacing: 0.05, pSize: false, pOpac: true, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0, follow: false, roundness: 1 },
+  { name: 'Craie', tip: 'chalk', hardness: 0.55, flow: 0.45, opacity: 1, spacing: 0.3, pSize: true, pOpac: true, sizeJit: 0.1, angleJit: 1, scatter: 0, opacJit: 0, follow: false, roundness: 1 },
+  { name: 'Poils', tip: 'bristle', hardness: 0.6, flow: 0.55, opacity: 1, spacing: 0.05, pSize: true, pOpac: true, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0, follow: true, roundness: 1, angle: 90 },
+  { name: 'Plat', tip: 'square', hardness: 0.8, flow: 0.9, opacity: 1, spacing: 0.05, pSize: true, pOpac: false, sizeJit: 0, angleJit: 0, scatter: 0, opacJit: 0, follow: true, roundness: 0.35, angle: 90 },
+  { name: 'Éclabous.', tip: 'splat', hardness: 0.8, flow: 1, opacity: 1, spacing: 0.9, pSize: true, pOpac: false, sizeJit: 0.5, angleJit: 1, scatter: 0.8, opacJit: 0.4, follow: false, roundness: 1 },
+  { name: 'Feuillage', tip: 'splat', hardness: 0.9, flow: 1, opacity: 1, spacing: 0.35, pSize: true, pOpac: false, sizeJit: 0.6, angleJit: 1, scatter: 1.1, opacJit: 0.2, follow: false, roundness: 0.55 },
+  { name: 'Grain fin', tip: 'chalk', hardness: 0.3, flow: 0.35, opacity: 0.8, spacing: 0.2, pSize: false, pOpac: true, sizeJit: 0.2, angleJit: 1, scatter: 0.3, opacJit: 0.3, follow: false, roundness: 1 },
+];
+function applyPreset(p) {
+  for (const k in p) if (k !== 'name' && k !== 'title') B[k] = p[k];
+  if (p.angle == null) B.angle = 0;
+  buildTip(); syncBrushUI(); toast('Brush : ' + p.name, 900);
+}
+
+/* ---- color picker ---- */
+const P = { h: 20, s: 0.7, v: 0.78, target: 'color' };
+const recents = [];
+function pickerFromHex(hex) {
+  const [r, g, b] = hexToRgb(hex); const [h, s, v] = rgbToHsv(r, g, b);
+  if (s > 0.001 && v > 0.001) P.h = h; if (v > 0.001) P.s = s; P.v = v; drawPicker();
+}
+function pickerHex() { return rgbToHex(...hsvToRgb(P.h, P.s, P.v)); }
+function drawPicker() {
+  const sv = $('#sv'), g = sv.getContext('2d'), w = sv.width, h = sv.height;
+  g.fillStyle = `hsl(${P.h},100%,50%)`; g.fillRect(0, 0, w, h);
+  let gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#fff'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const X = P.s * w, Y = (1 - P.v) * h;
+  g.lineWidth = 4; g.strokeStyle = '#000'; g.beginPath(); g.arc(X, Y, 11, 0, 7); g.stroke();
+  g.lineWidth = 3; g.strokeStyle = '#fff'; g.beginPath(); g.arc(X, Y, 11, 0, 7); g.stroke();
+  const hu = $('#hue'), q = hu.getContext('2d');
+  const hg = q.createLinearGradient(0, 0, hu.width, 0);
+  for (let i = 0; i <= 6; i++) hg.addColorStop(i / 6, `hsl(${i * 60},100%,50%)`);
+  q.fillStyle = hg; q.fillRect(0, 0, hu.width, hu.height);
+  const hx = P.h / 360 * hu.width; q.lineWidth = 4; q.strokeStyle = '#fff'; q.strokeRect(hx - 5, 2, 10, hu.height - 4);
+  const hex = pickerHex(); $('#curSw').style.background = hex;
+  if (document.activeElement !== $('#hexIn')) $('#hexIn').value = hex;
+  $('#nativeCol').value = hex;
+}
+function pickerChanged() { CH[P.target].value = pickerHex(); drawPicker(); renderChannels(); }
+function dragOn(canvasEl, fn) {
+  canvasEl.addEventListener('pointerdown', e => { canvasEl.setPointerCapture(e.pointerId); fn(e); const mv = ev => fn(ev); const up = () => { canvasEl.removeEventListener('pointermove', mv); canvasEl.removeEventListener('pointerup', up); }; canvasEl.addEventListener('pointermove', mv); canvasEl.addEventListener('pointerup', up); });
+}
+dragOn($('#sv'), e => { const r = $('#sv').getBoundingClientRect(); P.s = clamp((e.clientX - r.left) / r.width, 0, 1); P.v = 1 - clamp((e.clientY - r.top) / r.height, 0, 1); pickerChanged(); });
+dragOn($('#hue'), e => { const r = $('#hue').getBoundingClientRect(); P.h = clamp((e.clientX - r.left) / r.width, 0, 0.9999) * 360; pickerChanged(); });
+$('#hexIn').addEventListener('change', e => { let v = e.target.value.trim(); if (!v.startsWith('#')) v = '#' + v; if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) { pickerFromHex(v); pickerChanged(); } });
+$('#nativeCol').addEventListener('input', e => { pickerFromHex(e.target.value); pickerChanged(); });
+function addRecent(hex) {
+  const i = recents.indexOf(hex); if (i === 0) return; if (i > 0) recents.splice(i, 1);
+  recents.unshift(hex); if (recents.length > 20) recents.pop(); renderRecents();
+}
+function renderRecents() {
+  const r = $('#recents'); r.innerHTML = '';
+  for (const c of recents) r.append(el('div', { style: `background:${c}`, title: c, onclick: () => { pickerFromHex(c); pickerChanged(); } }));
+}
+function updatePickerUI() {
+  $('#ptarget').innerHTML = `cible : <b>${CH[P.target].name}</b>`;
+}
+
+/* ---- channel list ---- */
+function renderChannels() {
+  const list = $('#chList'); list.innerHTML = '';
+  for (const id of ORDER) {
+    const ch = CH[id];
+    const sw = el('div', { class: 'sw' + (ch.type === 'rgb' && P.target === id ? ' tgt' : ''), style: `background:${valCss(ch, ch.value)}`, title: ch.type === 'rgb' ? 'Éditer cette couleur dans le sélecteur' : 'Valeur peinte' });
+    if (ch.type === 'rgb') sw.addEventListener('click', () => { P.target = id; pickerFromHex(ch.value); updatePickerUI(); renderChannels(); });
+    const cb = el('input', { type: 'checkbox', title: 'Peindre sur ce canal' }); cb.checked = ch.paint;
+    cb.addEventListener('change', () => { ch.paint = cb.checked; renderChannels(); updateStatus(); });
+    const eye = el('button', { class: 'ib' + (S.viewCh === id ? ' on' : ''), title: 'Afficher ce canal dans la vue 2D' }, '2D');
+    eye.addEventListener('click', () => setView(id));
+    const nm = el('span', { class: 'nm', title: 'Clic : cocher/décocher' }, ch.name);
+    nm.addEventListener('click', () => { ch.paint = !ch.paint; renderChannels(); updateStatus(); });
+    const fill = el('button', { class: 'ib', title: `Remplir ${ch.name} avec cette valeur` }, 'Remplir');
+    fill.addEventListener('click', () => { const keep = ORDER.map(k => CH[k].paint); ORDER.forEach(k => CH[k].paint = k === id); fillChannels(); ORDER.forEach((k, i) => CH[k].paint = keep[i]); });
+    const row = el('div', { class: 'ch' + (ch.paint ? ' paint' : '') }, el('div', { class: 'chtop' }, cb, sw, nm, fill, eye));
+    if (ch.type === 'gray') {
+      const rng = el('input', { type: 'range', min: 0, max: 1, step: 0.005, value: ch.value });
+      const lab = el('span', {}, Math.round(ch.value * 255));
+      rng.addEventListener('input', () => { ch.value = +rng.value; lab.textContent = Math.round(ch.value * 255); sw.style.background = valCss(ch, ch.value); });
+      row.append(el('div', { class: 'chval' }, rng, lab));
+    }
+    list.append(row);
+  }
+  const sel = $('#viewSel'); sel.innerHTML = '';
+  for (const id of ORDER) sel.append(el('option', { value: id }, CH[id].name));
+  sel.value = S.viewCh;
+}
+function setView(id) { S.viewCh = id; need2D = true; renderChannels(); }
+$('#viewSel').addEventListener('change', e => setView(e.target.value));
+
+/* X : inverse la valeur peinte des canaux cochés (gris : v -> 1 - v, couleur : négatif) */
+function invertBrush() {
+  const chs = paintTargets(); if (!chs.length) { toast('Aucun canal coché'); return; }
+  const msg = [];
+  for (const ch of chs) {
+    if (ch.type === 'gray') { ch.value = 1 - ch.value; msg.push(`${ch.name} ${Math.round(ch.value * 255)}`); }
+    else { const [r, g, b] = hexToRgb(ch.value); ch.value = rgbToHex(255 - r, 255 - g, 255 - b); msg.push(`${ch.name} ${ch.value}`); }
+  }
+  if (CH[P.target].type === 'rgb') { pickerFromHex(CH[P.target].value); updatePickerUI(); }
+  renderChannels(); toast('Inversé : ' + msg.join(' · '), 1200);
+}
+
+/* ---- tools ---- */
+function setTool(t) {
+  S.tool = t;
+  document.querySelectorAll('.tool[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  updateStatus(); need2D = true;
+}
+document.querySelectorAll('.tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+$('#tFill').addEventListener('click', fillChannels);
+$('#tSwapView').addEventListener('click', () => setView(ORDER[(ORDER.indexOf(S.viewCh) + 1) % ORDER.length]));
+
+function updateStatus() {
+  const names = { brush: 'Pinceau', eraser: 'Gomme', smudge: 'Estompe', blur: 'Flou', picker: 'Pipette' };
+  $('#stDoc').innerHTML = `<b>${S.name}</b> · ${S.W} × ${S.H}`;
+  const pts = paintTargets().map(c => c.name).join(' + ') || '—';
+  $('#stTool').innerHTML = `${names[S.tool]} → <b>${pts}</b>`;
+  const mb = Math.round(S.W * S.H * 4 * ORDER.length / 1048576);
+  $('#stMem').textContent = `~${mb} Mo de canaux · ${undoStack.length} annulations`;
+}
+
+/* ---- layout ---- */
+let split = 0.55, layout = '23';
+function setLayout(l) {
+  layout = l;
+  $('#v2d').style.display = l === '3' ? 'none' : '';
+  $('#v3d').style.display = l === '2' ? 'none' : '';
+  $('#split').style.display = l === '23' ? '' : 'none';
+  $('#v2d').style.flex = l === '23' ? `${split} 1 0` : '1 1 0';
+  $('#v3d').style.flex = l === '23' ? `${1 - split} 1 0` : '1 1 0';
+  ['2', '23', '3'].forEach(k => $('#lay' + k).classList.toggle('on', k === l));
+  requestAnimationFrame(() => { resize3D(); need2D = true; });
+}
+$('#lay2').onclick = () => setLayout('2'); $('#lay23').onclick = () => setLayout('23'); $('#lay3').onclick = () => setLayout('3');
+$('#split').addEventListener('pointerdown', e => {
+  $('#split').setPointerCapture(e.pointerId);
+  const r = $('#views').getBoundingClientRect();
+  const mv = ev => { split = clamp((ev.clientX - r.left) / r.width, 0.15, 0.85); setLayout('23'); };
+  const up = () => { $('#split').removeEventListener('pointermove', mv); $('#split').removeEventListener('pointerup', up); };
+  $('#split').addEventListener('pointermove', mv); $('#split').addEventListener('pointerup', up);
+});
+new ResizeObserver(() => { resize3D(); need2D = true; }).observe($('#views'));
+
+/* =========================================================================
+   Dialogs
+   ========================================================================= */
+function modal(title, body, buttons) {
+  const foot = el('div', { class: 'foot' });
+  const ov = el('div', { class: 'ov' }, el('div', { class: 'modal' }, el('h2', {}, title), el('div', { class: 'body' }, body), foot));
+  const close = () => ov.remove();
+  for (const b of buttons) foot.append(el('button', { class: b.primary ? 'primary' : '', onclick: async () => { if ((await b.fn?.()) !== false) close(); } }, b.label));
+  ov.addEventListener('pointerdown', e => { if (e.target === ov) close(); });
+  document.body.append(ov); return close;
+}
+function sizeSelect(val) { const s = el('select'); for (const n of SIZES) s.append(el('option', { value: n }, n + ' px')); s.value = val; return s; }
+function confirmDiscard() { return !dirtyDoc || confirm('La texture actuelle n\'est pas enregistrée. Continuer quand même ?'); }
+
+function dlgNew() {
+  const name = el('input', { type: 'text', value: 'texture' });
+  const w = sizeSelect(S.W), h = sizeSelect(S.H);
+  const sq = el('input', { type: 'checkbox' }); sq.checked = S.W === S.H;
+  w.onchange = () => { if (sq.checked) h.value = w.value; }; h.onchange = () => { if (sq.checked) w.value = h.value; };
+  const bg = el('input', { type: 'color', value: CH.color.def });
+  const body = el('div', { class: 'fgrid' },
+    el('label', {}, 'Nom'), name,
+    el('label', {}, 'Largeur'), w,
+    el('label', {}, 'Hauteur'), h,
+    el('label', {}, ''), el('label', { class: 'chk' }, sq, ' Carré'),
+    el('label', {}, 'Couleur de fond'), bg);
+  const wrap = el('div', {}, body, el('p', { class: 'note' }, '4096 consomme beaucoup de mémoire (6 canaux ≈ 400 Mo) : réserve-la aux machines costaudes.'));
+  modal('Nouvelle texture', wrap, [
+    { label: 'Depuis une image…', fn: async () => { if (!confirmDiscard()) return false; const f = await pickFile('image/*'); if (f) await newFromImage(f); } },
+    { label: 'Annuler' },
+    { label: 'Créer', primary: true, fn: () => { if (!confirmDiscard()) return false; createDoc(+w.value, +h.value, name.value.trim() || 'texture', bg.value); renderChannels(); } },
+  ]);
+}
+async function newFromImage(f) {
+  const img = await loadImage(URL.createObjectURL(f));
+  const near = n => SIZES.reduce((a, b) => Math.abs(b - n) < Math.abs(a - n) ? b : a);
+  createDoc(near(img.width), near(img.height), f.name.replace(/\.[^.]+$/, ''));
+  CH.color.ctx.drawImage(img, 0, 0, S.W, S.H); CH.color.texDirty = true; need2D = true; texForce = true;
+  renderChannels(); updateStatus(); toast(`Image chargée en ${S.W} × ${S.H}`);
+}
+function dlgResize() {
+  const w = sizeSelect(S.W), h = sizeSelect(S.H);
+  modal('Changer la résolution', el('div', {}, el('div', { class: 'fgrid' }, el('label', {}, 'Largeur'), w, el('label', {}, 'Hauteur'), h),
+    el('p', { class: 'note' }, 'Le contenu est rééchantillonné. L\'historique d\'annulation est vidé.')), [
+    { label: 'Annuler' },
+    { label: 'Appliquer', primary: true, fn: () => resizeDoc(+w.value, +h.value) },
+  ]);
+}
+function dlgHelp() {
+  const k = (a, b) => [el('div', {}, ...a.split(' ').map(x => el('kbd', {}, x))), el('div', {}, b)];
+  modal('Raccourcis', el('div', { class: 'keys' },
+    ...k('B', 'Pinceau'), ...k('E', 'Gomme (revient à la valeur de fond)'), ...k('S', 'Estompe'), ...k('R', 'Flou'), ...k('I', 'Pipette (ou Alt maintenu)'),
+    ...k('G', 'Remplir les canaux cochés'), ...k('[ ]', 'Taille du brush'), ...k('Maj+[ Maj+]', 'Dureté'), ...k('1 … 9 0', 'Opacité 10 … 90 %, 100 %'),
+    ...k('Ctrl+Z', 'Annuler'), ...k('Ctrl+Y Ctrl+Maj+Z', 'Rétablir'), ...k('Espace', 'Déplacer la vue (maintenir)'), ...k('F', 'Recadrer'),
+    ...k('T', 'Vue tuilée on/off'), ...k('C', 'Canal suivant en 2D'), ...k('P', 'Peindre en 3D on/off'), ...k('Tab', 'Masquer les panneaux'),
+    ...k('Ctrl+S', 'Enregistrer le projet'), ...k('Ctrl+O', 'Ouvrir'), ...k('Ctrl+E', 'Exporter'), ...k('Ctrl+N', 'Nouveau')),
+    [{ label: 'OK', primary: true }]);
+}
+
+/* =========================================================================
+   Import / export / save
+   ========================================================================= */
+async function importIntoChannel(f, id = S.viewCh) {
+  const img = await loadImage(URL.createObjectURL(f));
+  const ch = CH[id]; const ed = beginEdit([ch]);
+  ch.ctx.save(); if (ch.type === 'gray') ch.ctx.filter = 'grayscale(1)';
+  ch.ctx.clearRect(0, 0, S.W, S.H); ch.ctx.drawImage(img, 0, 0, S.W, S.H); ch.ctx.restore();
+  bboxAdd(ed, 0, 0, S.W, S.H); endEdit(ed, 'Import image');
+  ch.texDirty = true; texForce = true; need2D = true; toast(`Image importée dans ${ch.name}`);
+}
+function getData(ch) { return ch.ctx.getImageData(0, 0, S.W, S.H).data; }
+function normalFromHeight(strength, directX) {
+  const W = S.W, H = S.H, hd = getData(CH.height), out = new ImageData(W, H), o = out.data;
+  const s = strength * W / 16 / 255;
+  const hx = (x, y) => {
+    x = S.wrapX ? mod(x, W) : clamp(x, 0, W - 1); y = S.wrapY ? mod(y, H) : clamp(y, 0, H - 1);
+    return hd[(y * W + x) * 4];
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    // sobel
+    const tl = hx(x - 1, y - 1), t = hx(x, y - 1), tr = hx(x + 1, y - 1), l = hx(x - 1, y), r = hx(x + 1, y), bl = hx(x - 1, y + 1), b = hx(x, y + 1), br = hx(x + 1, y + 1);
+    const dX = ((tr + 2 * r + br) - (tl + 2 * l + bl)) / 8, dY = ((bl + 2 * b + br) - (tl + 2 * t + tr)) / 8;
+    let nx = -dX * s, ny = dY * s, nz = 1; // OpenGL (Y+)
+    if (directX) ny = -ny;
+    const L = Math.hypot(nx, ny, nz); nx /= L; ny /= L; nz /= L;
+    const i = (y * W + x) * 4; o[i] = (nx * 0.5 + 0.5) * 255; o[i + 1] = (ny * 0.5 + 0.5) * 255; o[i + 2] = (nz * 0.5 + 0.5) * 255; o[i + 3] = 255;
+  }
+  return out;
+}
+function packImage(fn) {
+  const W = S.W, H = S.H, out = new ImageData(W, H), o = out.data;
+  const src = {}; for (const id of ORDER) src[id] = null;
+  const get = id => src[id] || (src[id] = getData(CH[id]));
+  fn(o, get);
+  return out;
+}
+async function imageDataBlob(id) { const c = mkCanvas(id.width, id.height); c.getContext('2d').putImageData(id, 0, 0); return canvasToBlob(c); }
+
+const EXPORTS = [
+  { key: 'color', label: 'Base Color', def: true, make: () => canvasToBlob(CH.color.canvas) },
+  { key: 'colorA', label: 'Base Color + Opacity en alpha (RGBA)', def: false, make: () => imageDataBlob(packImage((o, g) => { const c = g('color'), a = g('alpha'); for (let i = 0; i < o.length; i += 4) { o[i] = c[i]; o[i + 1] = c[i + 1]; o[i + 2] = c[i + 2]; o[i + 3] = a[i]; } })) },
+  { key: 'rough', label: 'Roughness', def: true, make: () => canvasToBlob(CH.rough.canvas) },
+  { key: 'metal', label: 'Metallic', def: true, make: () => canvasToBlob(CH.metal.canvas) },
+  { key: 'height', label: 'Height', def: true, make: () => canvasToBlob(CH.height.canvas) },
+  { key: 'normal', label: 'Normal (calculée depuis Height)', def: true, make: o => imageDataBlob(normalFromHeight(o.nStrength, o.directX)) },
+  { key: 'emit', label: 'Emissive', def: false, make: () => canvasToBlob(CH.emit.canvas) },
+  { key: 'alpha', label: 'Opacity', def: false, make: () => canvasToBlob(CH.alpha.canvas) },
+  { key: 'orm', label: 'ORM packé — R: AO(blanc) G: Roughness B: Metallic (Unreal)', def: false, make: () => imageDataBlob(packImage((o, g) => { const r = g('rough'), m = g('metal'); for (let i = 0; i < o.length; i += 4) { o[i] = 255; o[i + 1] = r[i]; o[i + 2] = m[i]; o[i + 3] = 255; } })) },
+  { key: 'ms', label: 'MetallicSmoothness — RGB: Metallic A: 1−Roughness (Unity)', def: false, make: () => imageDataBlob(packImage((o, g) => { const r = g('rough'), m = g('metal'); for (let i = 0; i < o.length; i += 4) { o[i] = o[i + 1] = o[i + 2] = m[i]; o[i + 3] = 255 - r[i]; } })) },
+];
+const FILE_SUFFIX = { color: 'BaseColor', colorA: 'BaseColorAlpha', rough: 'Roughness', metal: 'Metallic', height: 'Height', normal: 'Normal', emit: 'Emissive', alpha: 'Opacity', orm: 'ORM', ms: 'MetallicSmoothness' };
+const exportPrefs = { sel: Object.fromEntries(EXPORTS.map(e => [e.key, e.def])), directX: false, nStrength: 1, zip: true };
+function dlgExport() {
+  const name = el('input', { type: 'text', value: S.name });
+  const checks = EXPORTS.map(e => { const c = el('input', { type: 'checkbox' }); c.checked = exportPrefs.sel[e.key]; c.onchange = () => exportPrefs.sel[e.key] = c.checked; return el('label', { class: 'chk' }, c, ' ' + e.label); });
+  const fmt = el('select', {}, el('option', { value: 'gl' }, 'OpenGL (Y+) — Unity, Blender, Godot'), el('option', { value: 'dx' }, 'DirectX (Y−) — Unreal'));
+  fmt.value = exportPrefs.directX ? 'dx' : 'gl'; fmt.onchange = () => exportPrefs.directX = fmt.value === 'dx';
+  const ns = el('input', { type: 'number', min: 0.05, max: 20, step: 0.05, value: exportPrefs.nStrength }); ns.onchange = () => exportPrefs.nStrength = clamp(+ns.value, 0.05, 20);
+  const zip = el('input', { type: 'checkbox' }); zip.checked = exportPrefs.zip && !!window.JSZip; zip.disabled = !window.JSZip; zip.onchange = () => exportPrefs.zip = zip.checked;
+  const body = el('div', { style: 'display:grid;gap:10px' },
+    el('div', { class: 'fgrid' }, el('label', {}, 'Préfixe des fichiers'), name, el('label', {}, 'Normal map'), fmt, el('label', {}, 'Intensité normal'), ns),
+    el('div', { style: 'display:grid;gap:5px' }, ...checks),
+    el('label', { class: 'chk' }, zip, ' Tout regrouper dans un .zip'),
+    el('p', { class: 'note' }, `Fichiers PNG en ${S.W} × ${S.H}, nommés ${name.value}_BaseColor.png, ${name.value}_Normal.png…`));
+  modal('Exporter les textures', body, [
+    { label: 'Annuler' },
+    { label: 'Exporter', primary: true, fn: () => { S.name = name.value.trim() || S.name; updateStatus(); doExport(); } },
+  ]);
+}
+async function doExport() {
+  const sel = EXPORTS.filter(e => exportPrefs.sel[e.key]); if (!sel.length) { toast('Rien à exporter'); return; }
+  toast('Export en cours…', 10000); await nextFrame();
+  const files = [];
+  for (const e of sel) { files.push({ name: `${S.name}_${FILE_SUFFIX[e.key]}.png`, blob: await e.make(exportPrefs) }); await nextFrame(); }
+  if (exportPrefs.zip && window.JSZip) {
+    const z = new JSZip(); for (const f of files) z.file(f.name, f.blob);
+    download(await z.generateAsync({ type: 'blob' }), `${S.name}_textures.zip`);
+  } else for (const f of files) { download(f.blob, f.name); await new Promise(r => setTimeout(r, 250)); }
+  toast(`${files.length} texture(s) exportée(s)`);
+}
+
+let fileHandle = null;
+async function projectBlob() {
+  const chans = [];
+  for (const id of ORDER) { const ch = CH[id]; chans.push({ id, value: ch.value, def: ch.def, paint: ch.paint, png: await blobToDataURL(await canvasToBlob(ch.canvas)) }); }
+  const data = { app: 'PaintMe', version: 1, name: S.name, W: S.W, H: S.H, wrapX: S.wrapX, wrapY: S.wrapY, brush: S.brush, recents, s3: { repeatX: S3.repeatX, repeatY: S3.repeatY, bump: S3.bump }, trim: Object.fromEntries(TRIM_SAVE_KEYS.map(k => [k, TRIM[k]])), channels: chans };
+  return new Blob([JSON.stringify(data)], { type: 'application/json' });
+}
+async function saveProject(saveAs = false) {
+  toast('Enregistrement…', 10000); await nextFrame();
+  const blob = await projectBlob();
+  if (window.showSaveFilePicker && window.self === window.top) {
+    try {
+      if (!fileHandle || saveAs) fileHandle = await showSaveFilePicker({ suggestedName: S.name + '.paintme', types: [{ description: 'Projet PaintMe', accept: { 'application/json': ['.paintme'] } }] });
+      const w = await fileHandle.createWritable(); await w.write(blob); await w.close();
+      dirtyDoc = false; toast('Projet enregistré : ' + fileHandle.name); return;
+    } catch (e) { if (e.name === 'AbortError') { toast('Enregistrement annulé'); return; } }
+  }
+  download(blob, S.name + '.paintme'); dirtyDoc = false; toast('Projet téléchargé : ' + S.name + '.paintme');
+}
+async function openProject(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'PaintMe') throw new Error('not paintme');
+    for (const c of data.channels) if (CH[c.id] && c.def != null) CH[c.id].def = c.def;
+    createDoc(data.W, data.H, data.name);
+    for (const c of data.channels) {
+      const ch = CH[c.id]; if (!ch) continue;
+      ch.value = c.value; ch.paint = c.paint;
+      const img = await loadImage(c.png); ch.ctx.clearRect(0, 0, S.W, S.H); ch.ctx.drawImage(img, 0, 0, S.W, S.H); ch.texDirty = true;
+    }
+    S.wrapX = data.wrapX ?? true; S.wrapY = data.wrapY ?? true; $('#wrapX').checked = S.wrapX; $('#wrapY').checked = S.wrapY;
+    if (data.brush) Object.assign(S.brush, data.brush);
+    if (data.s3) Object.assign(S3, data.s3);
+    if (data.trim) { Object.assign(TRIM, data.trim); if (TRIM.on) { buildTrimScene(); renderTrimWin(); } }
+    if (data.recents) { recents.length = 0; recents.push(...data.recents); renderRecents(); }
+    buildTip(); syncBrushUI(); applyRepeat(); applyMaterial(); renderChannels(); pickerFromHex(CH[P.target].value); updateStatus();
+    texForce = true; need2D = true; dirtyDoc = false; toast('Projet ouvert : ' + S.name);
+  } catch (e) { console.error(e); toast('Fichier projet invalide'); }
+}
+async function dlgOpen() {
+  if (!confirmDiscard()) return;
+  if (window.showOpenFilePicker && window.self === window.top) {
+    try {
+      const [h] = await showOpenFilePicker({ types: [{ description: 'Projet PaintMe', accept: { 'application/json': ['.paintme'] } }] });
+      fileHandle = h; await openProject(await h.getFile()); return;
+    } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const f = await pickFile('.paintme,application/json'); if (f) { fileHandle = null; await openProject(f); }
+}
+async function dlgImport() { const f = await pickFile('image/*'); if (f) importIntoChannel(f); }
+
+$('#bNew').onclick = dlgNew; $('#bOpen').onclick = dlgOpen; $('#bSave').onclick = () => saveProject();
+$('#bImport').onclick = dlgImport; $('#bResize').onclick = dlgResize; $('#bExport').onclick = dlgExport;
+$('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bHelp').onclick = dlgHelp;
+$('#bPanels').onclick = togglePanels;
+$('#bFit').onclick = fitView;
+$('#bTiled').onclick = () => { S.tiled = !S.tiled; $('#bTiled').classList.toggle('on', S.tiled); need2D = true; };
+$('#wrapX').onchange = e => S.wrapX = e.target.checked; $('#wrapY').onchange = e => S.wrapY = e.target.checked;
+$('#unlit').onchange = e => { S3.unlit = e.target.checked; applyMaterial(); };
+$('#alphaCut').onchange = e => { S3.alphaCut = e.target.checked; applyMaterial(); };
+$('#showGrid').onchange = e => grid.visible = e.target.checked;
+$('#view3Sel').onchange = e => { S3.view = e.target.value; applyMaterial(); };
+$('#meshSel').onchange = e => { if (TRIM.on) trimEnable(false, true); setMesh(e.target.value); };
+$('#bModel').onclick = async () => { const f = await pickFile('.glb,.gltf,.obj,.fbx'); if (f) loadModel(f); };
+$('#bPaint3D').onclick = () => setPaint3D(!S3.paint3D);
+$('#bRotate').onclick = () => { S3.rotate = !S3.rotate; $('#bRotate').classList.toggle('on', S3.rotate); };
+let panelsHidden = false;
+function togglePanels() {
+  if (window.innerWidth <= 820) { document.body.classList.toggle('showpanels'); return; }
+  panelsHidden = !panelsHidden;
+  $('#left').style.display = $('#right').style.display = panelsHidden ? 'none' : '';
+  $('#main').style.gridTemplateColumns = panelsHidden ? '46px minmax(0,1fr)' : '';
+  requestAnimationFrame(() => { resize3D(); need2D = true; });
+}
+
+/* ---- drag & drop ---- */
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('#drop').style.display = 'grid'; });
+window.addEventListener('dragleave', e => { dragDepth--; if (dragDepth <= 0) { dragDepth = 0; $('#drop').style.display = 'none'; } });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', async e => {
+  e.preventDefault(); dragDepth = 0; $('#drop').style.display = 'none';
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  const n = f.name.toLowerCase();
+  if (n.endsWith('.paintme')) { if (confirmDiscard()) openProject(f); }
+  else if (/\.(glb|gltf|obj|fbx)$/.test(n)) loadModel(f);
+  else if (f.type.startsWith('image/')) importIntoChannel(f);
+  else toast('Type de fichier non reconnu');
+});
+
+/* ---- keyboard ---- */
+window.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  const typing = (tag === 'input' && !['range', 'checkbox', 'color'].includes(e.target.type)) || tag === 'select' || tag === 'textarea';
+  if (e.key === 'Alt') { altDown = true; e.preventDefault(); need2D = true; c2d.style.cursor = 'copy'; }
+  if (typing) return;
+  const k = e.key.toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl) {
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+    else if (k === 's') { e.preventDefault(); saveProject(e.shiftKey); }
+    else if (k === 'o') { e.preventDefault(); dlgOpen(); }
+    else if (k === 'e') { e.preventDefault(); dlgExport(); }
+    else if (k === 'n') { e.preventDefault(); dlgNew(); }
+    return;
+  }
+  if (e.code === 'Space') { if (!spaceDown) { spaceDown = true; c2d.style.cursor = 'grab'; } e.preventDefault(); return; }
+  if (e.key === 'Tab') { e.preventDefault(); togglePanels(); return; }
+  if (e.code === 'BracketLeft' || e.code === 'BracketRight' || k === '[' || k === ']') {
+    const up = e.code === 'BracketRight' || k === ']';
+    if (e.shiftKey) { B.hardness = clamp(B.hardness + (up ? 0.1 : -0.1), 0, 1); buildTip(); }
+    else B.size = clamp(Math.round(B.size * (up ? 1.15 : 1 / 1.15) + (up ? 1 : -1)), 1, 2000);
+    syncBrushUI(); need2D = true; return;
+  }
+  if (/^[0-9]$/.test(e.key)) { B.opacity = e.key === '0' ? 1 : +e.key / 10; syncBrushUI(); toast('Opacité ' + Math.round(B.opacity * 100) + ' %', 700); return; }
+  const map = { b: 'brush', e: 'eraser', s: 'smudge', r: 'blur', i: 'picker' };
+  if (map[k]) { setTool(map[k]); return; }
+  if (k === 'g') fillChannels();
+  else if (k === 'f') fitView();
+  else if (k === 't') $('#bTiled').click();
+  else if (k === 'c') $('#tSwapView').click();
+  else if (k === 'p') setPaint3D(!S3.paint3D);
+  else if (k === 'm') trimEnable(!TRIM.on);
+  else if (k === 'v') { const o = [...$('#view3Sel').options].map(x => x.value); S3.view = o[(o.indexOf(S3.view) + 1) % o.length]; $('#view3Sel').value = S3.view; applyMaterial(); toast('3D : ' + $('#view3Sel').selectedOptions[0].textContent, 900); }
+  else if (k === 'x') invertBrush();
+  else if (e.key === '?' || k === 'h') dlgHelp();
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'Space') { spaceDown = false; c2d.style.cursor = 'crosshair'; }
+  if (e.key === 'Alt') { altDown = false; c2d.style.cursor = 'crosshair'; need2D = true; }
+});
+window.addEventListener('blur', () => { spaceDown = altDown = false; });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+window.addEventListener('beforeunload', e => { if (dirtyDoc) { e.preventDefault(); e.returnValue = ''; } });
+
+/* =========================================================================
+   TRIMSHEET ROUTE — bords de route peints directement en 3D
+   ========================================================================= */
+const TRIM = {
+  on: false, cols: 4, mode: 'edges',            // 'edges' = bords de route | 'band' = bande complète
+  leftCol: 1, rightCol: 1, span: 1, rightOff: 0, fade: 0.35, fadeOut: 0.3, hblend: 0, roadTU: 1, lineEdge: true, lineCenter: true, grassSize: 3, grassTint: '#ffffff', groundW: 14, mirror: true, flipU: false,
+  roadW: 3.2, borderW: 0.9, overlap: 0.18, slope: 0.12, lift: 0.004,
+  length: 16, curve: 0.8, curveFreq: 0.35, vScale: 1, roadTile: 4,
+  scroll: false, speed: 0.6, ground: true, groundCol: '#3d4a2f', roadTint: '#ffffff',
+  bandW: 2.4, showWrap: true, guides: true, prevMesh: 'sphere',
+};
+const TRIM_SAVE_KEYS = ['cols','mode','rightOff','fade','fadeOut','hblend','roadTU','lineEdge','lineCenter','grassSize','grassTint','groundW','leftCol','rightCol','span','mirror','flipU','roadW','borderW','overlap','slope','length','curve','curveFreq','vScale','roadTile','speed','ground','groundCol','roadTint','bandW','showWrap','guides'];
+let trimGroup = null, trimVOff = 0, trimLastT = 0, trimRoadTex = null, trimRoadCustom = false, trimGrassTex = null;
+const roadMat = new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 });
+const groundMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 4 });
+
+function makeProcGrassTex() {
+  const S2 = 512, c = mkCanvas(S2, S2), g = c.getContext('2d'), id = g.createImageData(S2, S2), d = id.data;
+  for (let y = 0; y < S2; y++) for (let x = 0; x < S2; x++) {
+    // bruit tileable (période = S2) : on moyenne sur un tore
+    const a = x / S2 * 6.2832, b = y / S2 * 6.2832;
+    const n1 = vnoise(Math.cos(a) * 3 + 10, Math.sin(a) * 3 + Math.cos(b) * 3, 21), n2 = vnoise(Math.sin(b) * 9 + Math.cos(a) * 9, Math.sin(a) * 9 + 4, 22);
+    const n3 = hash2(x, y, 7), i = (y * S2 + x) * 4, k = 0.55 * n1 + 0.3 * n2 + 0.15 * n3;
+    d[i] = 52 + k * 50; d[i + 1] = 78 + k * 62; d[i + 2] = 34 + k * 26; d[i + 3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+}
+function makeProcRoadTex() {
+  const c = mkCanvas(512, 1024), g = c.getContext('2d');
+  g.fillStyle = '#4a4b4f'; g.fillRect(0, 0, 512, 1024);
+  const id = g.getImageData(0, 0, 512, 1024), d = id.data;
+  for (let y = 0; y < 1024; y++) for (let x = 0; x < 512; x++) {
+    const n = (hash2(x, y, 3) - 0.5) * 34 + (vnoise(x / 40, y / 40, 5) - 0.5) * 26 + (vnoise(x / 9, y / 9, 8) - 0.5) * 12;
+    const i = (y * 512 + x) * 4; d[i] = clamp(d[i] + n, 0, 255); d[i + 1] = clamp(d[i + 1] + n, 0, 255); d[i + 2] = clamp(d[i + 2] + n * 1.05, 0, 255);
+  }
+  g.putImageData(id, 0, 0);
+  if (TRIM.lineEdge) { g.fillStyle = 'rgba(235,235,225,.92)'; g.fillRect(22, 0, 12, 1024); g.fillRect(478, 0, 12, 1024); }      // lignes de rive
+  if (TRIM.lineCenter) g.fillStyle = 'rgba(240,240,230,.9)'; if (TRIM.lineCenter) for (let y = 0; y < 1024; y += 512) g.fillRect(250, y + 64, 12, 300); // axe pointillé
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+}
+
+/* centerline sampled by arc length */
+function trimCenter(segs) {
+  const L = TRIM.length, pts = [];
+  let arc = 0, prev = null;
+  for (let i = 0; i <= segs; i++) {
+    const s = i / segs * L, z = L / 2 - s;
+    const x = TRIM.curve * Math.sin(s * TRIM.curveFreq);
+    const dx = TRIM.curve * TRIM.curveFreq * Math.cos(s * TRIM.curveFreq), dz = -1;
+    const len = Math.hypot(dx, dz); const tx = dx / len, tz = dz / len;
+    if (prev) arc += Math.hypot(x - prev[0], z - prev[1]);
+    pts.push({ x, z, nx: -tz, nz: tx, arc }); prev = [x, z];   // n = vecteur latéral (vers la droite du conducteur)
+  }
+  return pts;
+}
+/* ribbon between lateral offsets la (u=ua) and lb (u=ub) */
+function trimRibbon(pts, la, lb, ya, yb, ua, ub, vPer) {
+  const n = pts.length, pos = new Float32Array(n * 6), uv = new Float32Array(n * 4), idx = [];
+  pts.forEach((p, i) => {
+    pos.set([p.x + p.nx * la, ya, p.z + p.nz * la, p.x + p.nx * lb, yb, p.z + p.nz * lb], i * 6);
+    const v = (p.arc + trimVOff) * vPer; uv.set([ua, v, ub, v], i * 4);
+    if (i < n - 1) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+  g.computeVertexNormals();
+  if (g.attributes.normal.getY(0) < 0) { for (let k = 0; k < idx.length; k += 3) [idx[k + 1], idx[k + 2]] = [idx[k + 2], idx[k + 1]]; g.setIndex(idx); g.computeVertexNormals(); }
+  g.userData = { arc: pts.map(p => p.arc), vPer };
+  return g;
+}
+function trimMesh(geo, mat, paint) { const m = new THREE.Mesh(geo, mat); if (!paint) m.userData.noPaint = m.userData.keepMat = true; return m; }
+
+/* Ruban "chaîné" : les colonnes se suivent le long de la route (1 → 2 → … → N → 1).
+   fIn/fOut = position dans la largeur d'une colonne (0..1) des bords a / b. Lc = longueur monde d'une colonne. */
+function trimChainRibbon(pts, la, lb, ya, yb, fIn, fOut, Lc, colOff) {
+  const N = TRIM.cols, off = trimVOff, total = pts[pts.length - 1].arc;
+  const at = a => { // point interpolé sur la ligne centrale à l'abscisse a
+    let i = 1; while (i < pts.length - 1 && pts[i].arc < a) i++;
+    const p0 = pts[i - 1], p1 = pts[i], f = clamp((a - p0.arc) / ((p1.arc - p0.arc) || 1), 0, 1);
+    const nx = lerp(p0.nx, p1.nx, f), nz = lerp(p0.nz, p1.nz, f), l = Math.hypot(nx, nz) || 1;
+    return { x: lerp(p0.x, p1.x, f), z: lerp(p0.z, p1.z, f), nx: nx / l, nz: nz / l, arc: a };
+  };
+  const pos = [], uv = [], idx = [];
+  let k = Math.floor(off / Lc);
+  for (let guard = 0; guard < 4000; guard++, k++) {
+    const a0 = Math.max(0, k * Lc - off), a1 = Math.min(total, (k + 1) * Lc - off);
+    if (a0 >= total) break; if (a1 <= a0) continue;
+    const col = mod(k + colOff, N), u0 = (col + fIn) / N, u1 = (col + fOut) / N;
+    const samp = [at(a0)]; for (const p of pts) if (p.arc > a0 && p.arc < a1) samp.push(p); samp.push(at(a1));
+    const base = pos.length / 3;
+    samp.forEach((p, i) => {
+      const v = (p.arc + off) / Lc - k;
+      pos.push(p.x + p.nx * la, ya, p.z + p.nz * la, p.x + p.nx * lb, yb, p.z + p.nz * lb);
+      uv.push(u0, v, u1, v);
+      if (i < samp.length - 1) { const a = base + i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    });
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  g.computeVertexNormals();
+  if (g.attributes.normal.getY(0) < 0) { for (let q = 0; q < idx.length; q += 3) [idx[q + 1], idx[q + 2]] = [idx[q + 2], idx[q + 1]]; g.setIndex(idx); g.computeVertexNormals(); }
+  return g;
+}
+function trimColLen(worldW) { return worldW * (S.H * TRIM.cols / S.W) * TRIM.vScale; } // texels carrés si vScale = 1
+
+/* ---------- Mélange shader (façon RVT) : route + trimsheet dans un seul mesh ---------- */
+const TB = {
+  tC: { value: null }, tR: { value: null }, tM: { value: null }, tH: { value: null }, tE: { value: null }, tA: { value: null }, tRoad: { value: null },
+  uRW: { value: 1.6 }, uOV: { value: 0.2 }, uBW: { value: 1 }, uN: { value: 4 }, uLc: { value: 1 }, uRoadTile: { value: 4 },
+  uFlip: { value: 0 }, uMirror: { value: 1 }, uROff: { value: 0 }, uFade: { value: 0.3 }, uHB: { value: 0 }, uBump: { value: 1 }, uEmI: { value: 1 },
+  uTexW: { value: 1024 }, uTint: { value: new THREE.Color(1, 1, 1) },
+  tGrass: { value: null }, uGrassSize: { value: 3 }, uGrassTint: { value: new THREE.Color(1, 1, 1) }, uRoadTU: { value: 1 }, uFadeOut: { value: 0.3 }, uView: { value: 0 },
+};
+const blendMat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0, side: THREE.DoubleSide });
+blendMat.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, TB);
+  sh.vertexShader = 'attribute vec2 rp;\nvarying vec2 vRp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vRp = rp;');
+  sh.fragmentShader = `
+uniform sampler2D tC, tR, tM, tH, tE, tA, tRoad, tGrass;
+uniform float uGrassSize, uRoadTU, uFadeOut, uView;
+vec3 gView;
+float gW;
+vec3 tbSrgb(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0/2.4)) - 0.055, step(0.0031308, c)); }
+uniform vec3 uGrassTint;
+uniform float uRW, uOV, uBW, uN, uLc, uRoadTile, uFlip, uMirror, uROff, uFade, uHB, uBump, uEmI, uTexW;
+uniform vec3 uTint;
+varying vec2 vRp;
+vec3 tbPerturb(vec3 sp, vec3 sn, vec2 dH, float fd) {
+  vec3 sx = normalize(dFdx(sp)), sy = normalize(dFdy(sp));
+  vec3 r1 = cross(sy, sn), r2 = cross(sn, sx);
+  float det = dot(sx, r1) * fd;
+  vec3 g = sign(det) * (dH.x * r1 + dH.y * r2);
+  return normalize(abs(det) * sn - g);
+}
+void trimBlend(out vec3 col, out float ro, out float me, out float h, out vec3 em) {
+  float lat = vRp.x, s = vRp.y, d = abs(lat);
+  vec3 roadC = texture(tRoad, vec2((lat + uRW) / (2.0 * uRW) * uRoadTU, s / uRoadTile)).rgb * uTint;
+  vec3 grassC = texture(tGrass, vec2(lat, s) / uGrassSize).rgb * uGrassTint;
+  bool onRoad = d < uRW;
+  vec3 rc = onRoad ? roadC : grassC;   // ce qu'il y a sous le trimsheet : route ou terrain
+  float f = (d - (uRW - uOV)) / uBW;
+  float fc = clamp(f, 0.0, 1.0);
+  bool left = lat < 0.0;
+  float fi = uFlip > 0.5 ? 1.0 - fc : fc;
+  if (!left && uMirror < 0.5) fi = 1.0 - fi;
+  float t = s / uLc, k = floor(t), v = t - k;
+  float c = mod(k + (left ? 0.0 : uROff), uN);
+  float m = 0.5 * uN / uTexW;
+  vec2 tuv = vec2((c + clamp(fi, m, 1.0 - m)) / uN, v);
+  vec2 cg = vec2(fi / uN, t), gx = dFdx(cg), gy = dFdy(cg);   // gradients continus : pas de ligne aux jonctions
+  vec3 tc = textureGrad(tC, tuv, gx, gy).rgb;
+  float tr = textureGrad(tR, tuv, gx, gy).r, tm = textureGrad(tM, tuv, gx, gy).r;
+  float th = textureGrad(tH, tuv, gx, gy).r, ta = textureGrad(tA, tuv, gx, gy).r;
+  vec3 te = textureGrad(tE, tuv, gx, gy).rgb;
+  float w = 0.0;
+  if (f >= 0.0 && f <= 1.0) {
+    float fin = uFade > 0.001 ? smoothstep(0.0, uFade, f) : 1.0;
+    float fout = uFadeOut > 0.001 ? 1.0 - smoothstep(1.0 - uFadeOut, 1.0, f) : 1.0;
+    w = ta * fin * fout;
+    if (uHB > 0.0) w = clamp((w - 0.5 + (th - 0.5) * uHB) * (1.0 + uHB * 3.0) + 0.5, 0.0, 1.0) * step(0.001, fin * fout);
+  }
+  float rh = dot(rc, vec3(0.333)) * 0.3 + 0.35;
+  gW = w;
+  col = mix(rc, tc, w); ro = mix(onRoad ? 0.9 : 0.97, tr, w); me = mix(0.0, tm, w); h = mix(rh, th, w); em = te * uEmI * w;
+}
+` + sh.fragmentShader
+    .replace('#include <map_fragment>', 'vec3 bCol; float bRough, bMetal, bH; vec3 bEm;\n trimBlend(bCol, bRough, bMetal, bH, bEm);\n diffuseColor.rgb *= bCol;\n float uv_ = uView; gView = uv_ < 1.5 ? tbSrgb(bCol) : uv_ < 2.5 ? vec3(bRough) : uv_ < 3.5 ? vec3(bMetal) : uv_ < 4.5 ? vec3(bH) : uv_ < 5.5 ? tbSrgb(bEm) : vec3(gW);')
+    .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n if (uView > 0.5) gl_FragColor = vec4(gView, 1.0);')
+    .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = bRough;')
+    .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = bMetal;')
+    .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = bEm;')
+    .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n if (uBump > 0.0) normal = tbPerturb(-vViewPosition, normal, vec2(dFdx(bH), dFdy(bH)) * uBump, faceDirection);');
+};
+function trimSyncUniforms() {
+  TB.tC.value = CH.color.tex; TB.tR.value = CH.rough.tex; TB.tM.value = CH.metal.tex; TB.tH.value = CH.height.tex; TB.tE.value = CH.emit.tex; TB.tA.value = CH.alpha.tex;
+  TB.tRoad.value = trimRoadTex;
+  TB.uRW.value = TRIM.roadW / 2; TB.uOV.value = TRIM.overlap; TB.uBW.value = TRIM.borderW; TB.uN.value = TRIM.cols; TB.uLc.value = trimColLen(TRIM.borderW);
+  TB.uRoadTile.value = TRIM.roadTile; TB.uFlip.value = TRIM.flipU ? 1 : 0; TB.uMirror.value = TRIM.mirror ? 1 : 0; TB.uROff.value = TRIM.rightOff;
+  TB.uFade.value = TRIM.fade; TB.uHB.value = TRIM.hblend; TB.uBump.value = S3.bump; TB.uEmI.value = S3.emissive; TB.uTexW.value = S.W; TB.uTint.value.set(TRIM.roadTint);
+  if (!trimGrassTex) trimGrassTex = makeProcGrassTex();
+  TB.tGrass.value = trimGrassTex; TB.uGrassSize.value = TRIM.grassSize; TB.uGrassTint.value.set(TRIM.grassTint); TB.uRoadTU.value = TRIM.roadTU; TB.uFadeOut.value = TRIM.fadeOut;
+}
+/* même formule que le shader : position (latérale, abscisse) -> pixel du trimsheet (null = centre de route, non peignable) */
+function trimBlendTex(lat, s) {
+  const rw = TRIM.roadW / 2, N = TRIM.cols, f = (Math.abs(lat) - (rw - TRIM.overlap)) / TRIM.borderW;
+  if (f < 0 || f > 1) return null;
+  const fc = clamp(f, 0, 1), left = lat < 0;
+  let fi = TRIM.flipU ? 1 - fc : fc; if (!left && !TRIM.mirror) fi = 1 - fi;
+  const t = s / trimColLen(TRIM.borderW), k = Math.floor(t), v = t - k;
+  const col = mod(k + (left ? 0 : TRIM.rightOff), N);
+  return [(col + fi) / N * S.W, (1 - v) * S.H];
+}
+function trimBlendMesh(pts, la, lb, ya, yb) {
+  const g = trimRibbon(pts, la, lb, ya, yb, la, lb, 1);       // uv = (latéral, abscisse + défilement) en unités monde
+  g.setAttribute('rp', g.attributes.uv.clone());
+  const m = new THREE.Mesh(g, blendMat); m.userData.keepMat = true; m.userData.blend = true; return m;
+}
+
+function buildTrimScene() {
+  if (trimGroup) { trimGroup.traverse(o => o.geometry && o.geometry.dispose()); }
+  const grp = new THREE.Group(), N = TRIM.cols, pts = trimCenter(240);
+  if (!trimRoadTex) trimRoadTex = makeProcRoadTex();
+  roadMat.map = trimRoadTex; roadMat.color.set(TRIM.roadTint); roadMat.needsUpdate = true;
+  groundMat.color.set(TRIM.groundCol);
+  const fI = TRIM.flipU ? 1 : 0, fO = 1 - fI;
+  if (TRIM.mode === 'blend') {
+    const rw = TRIM.roadW / 2, E = rw - TRIM.overlap + TRIM.borderW, yE = -TRIM.slope * (E - rw);
+    grp.add(trimBlendMesh(pts, -rw, rw, 0, 0));
+    const Eo = Math.max(E, rw), yo = E > rw ? yE : 0;
+    if (E > rw) { grp.add(trimBlendMesh(pts, -rw, -E, 0, yE)); grp.add(trimBlendMesh(pts, rw, E, 0, yE)); }
+    if (TRIM.ground) { grp.add(trimBlendMesh(pts, -Eo, -Eo - TRIM.groundW, yo, yo)); grp.add(trimBlendMesh(pts, Eo, Eo + TRIM.groundW, yo, yo)); } // terrain : même shader, même mélange
+    trimSyncUniforms();
+  } else if (TRIM.mode === 'band') {
+    const half = TRIM.bandW / 2, Lc = trimColLen(TRIM.bandW);
+    grp.add(trimMesh(trimChainRibbon(pts, -half, half, TRIM.lift, TRIM.lift, fI, fO, Lc, 0), litMat, true));
+    if (TRIM.ground) grp.add(trimMesh(trimRibbon(pts, -half - 6, half + 6, -0.01, -0.01, 0, 1, 0.1), groundMat, false));
+  } else {
+    const rw = TRIM.roadW / 2, bw = TRIM.borderW, ov = TRIM.overlap, Lc = trimColLen(bw);
+    grp.add(trimMesh(trimRibbon(pts, -rw, rw, 0, 0, 0, TRIM.roadTU, 1 / TRIM.roadTile), roadMat, false));
+    const yIn = TRIM.lift, yOut = TRIM.lift - TRIM.slope * bw;
+    const rIn = TRIM.mirror ? fI : fO, rOut = 1 - rIn;
+    grp.add(trimMesh(trimChainRibbon(pts, -rw + ov, -rw + ov - bw, yIn, yOut, fI, fO, Lc, 0), litMat, true));
+    grp.add(trimMesh(trimChainRibbon(pts, rw - ov, rw - ov + bw, yIn, yOut, rIn, rOut, Lc, TRIM.rightOff), litMat, true));
+    if (TRIM.ground) {
+      const e = rw - ov + bw - 0.02, yg = yOut - 0.006;
+      grp.add(trimMesh(trimRibbon(pts, -e, -e - 8, yg, yg - 0.4, 0, 1, 0.1), groundMat, false));
+      grp.add(trimMesh(trimRibbon(pts, e, e + 8, yg, yg - 0.4, 0, 1, 0.1), groundMat, false));
+    }
+  }
+  trimGroup = grp;
+  if (TRIM.on) { if (current) scene.remove(current); current = grp; scene.add(grp); applyMaterial(); }
+  need2D = true;
+}
+function trimUpdateUV() {
+  if (!trimGroup) return;
+  trimGroup.traverse(o => {
+    if (!o.isMesh || o.material === groundMat) return; const ud = o.geometry.userData; if (!ud.arc) return;
+    const uv = o.geometry.attributes.uv;
+    for (let i = 0; i < ud.arc.length; i++) { const v = (ud.arc[i] + trimVOff) * ud.vPer; uv.setY(i * 2, v); uv.setY(i * 2 + 1, v); }
+    uv.needsUpdate = true;
+  });
+}
+function trimTick() {
+  if (TRIM.on && TRIM.mode === 'blend') trimSyncUniforms();
+  const now = performance.now(), dt = Math.min(0.1, (now - (trimLastT || now)) / 1000); trimLastT = now;
+  if (!TRIM.on || !TRIM.scroll) return;
+  trimVOff += dt * TRIM.speed * 2; buildTrimScene();
+}
+function trimCam(kind) {
+  const L = TRIM.length; resize3D.user = true;
+  if (kind === 'driver') { cam.position.set(0, 1.25, L / 2 - 0.5); controls.target.set(0, 0.2, L / 2 - 6); }
+  else if (kind === 'top') { cam.position.set(0, 7.5, 0.01); controls.target.set(0, 0, 0); }
+  else if (kind === 'close') { cam.position.set(-TRIM.roadW / 2 - 1.6, 1.4, 2.2); controls.target.set(-TRIM.roadW / 2, 0, 0); }
+  else { cam.position.set(6.5, 5.2, 8.5); controls.target.set(0, 0, 0); }
+  controls.update();
+}
+function trimEnable(on, keepMesh) {
+  if (on === TRIM.on) return;
+  TRIM.on = on;
+  $('#bTrim').classList.toggle('on', on);
+  $('#trimWin').style.display = on ? '' : 'none';
+  if (on) {
+    TRIM.prevMesh = S3.mesh;
+    S.wrapX = S.wrapY = true; $('#wrapX').checked = $('#wrapY').checked = true; // dernière colonne -> raccord sur la 1re
+    buildTrimScene(); applyRepeat(); setPaint3D(true);
+    if ($('#v3d').style.display === 'none') setLayout('23');
+    trimCam('three'); renderTrimWin();
+    toast('Mode Trimsheet route : peins directement les bords dans la vue 3D');
+  } else {
+    if (current === trimGroup) { scene.remove(trimGroup); current = null; }
+    applyRepeat();
+    if (!keepMesh) setMesh(TRIM.prevMesh || 'sphere');
+    cam.position.set(2.4, 1.5, 2.9); controls.target.set(0, 0, 0); resize3D.user = false; resize3D();
+  }
+  need2D = true;
+}
+
+/* 2D : guides de colonnes */
+function drawTrimGuides(g, ox, oy, tw, th, i0, i1, j0, j1, dpr) {
+  if (!TRIM.on || !TRIM.guides) return;
+  const N = TRIM.cols, cwid = tw / N;
+  const used = new Set(); // toutes les colonnes sont utilisées (chaînées)
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const X0 = ox + i * tw, Y0 = oy + j * th;
+    for (let c = 0; c < N; c++) {
+      if (used.has(c)) { g.fillStyle = 'rgba(255,138,61,.08)'; g.fillRect(X0 + c * cwid, Y0, cwid, th); }
+      if (c) { g.strokeStyle = 'rgba(80,200,255,.7)'; g.lineWidth = 1; g.setLineDash([4 * dpr, 4 * dpr]); g.beginPath(); g.moveTo(Math.round(X0 + c * cwid) + .5, Y0); g.lineTo(Math.round(X0 + c * cwid) + .5, Y0 + th); g.stroke(); g.setLineDash([]); }
+      if (i === 0 && j === 0) {
+        g.font = `${11 * dpr}px system-ui,sans-serif`; g.fillStyle = 'rgba(0,0,0,.6)';
+        const lbl = (c + 1) + (c < N - 1 ? ' → ' + (c + 2) : ' → 1'), x = X0 + c * cwid + 5 * dpr, y = Y0 + 15 * dpr;
+        g.fillRect(x - 3 * dpr, y - 11 * dpr, g.measureText(lbl).width + 6 * dpr, 15 * dpr);
+        g.fillStyle = used.has(c) ? '#ff8a3d' : '#8fd8ff'; g.fillText(lbl, x, y);
+      }
+    }
+  }
+}
+
+/* Fenêtre de réglages */
+function renderTrimWin() {
+  const body = $('#trimBody'); body.innerHTML = '';
+  const reb = () => buildTrimScene();
+  const sec = (t) => { const s = el('div', { class: 'tsec' }, el('h4', {}, t)); body.append(s); return s; };
+  const chk = (parent, label, key, fn = reb, title = '') => {
+    const i = el('input', { type: 'checkbox' }); i.checked = TRIM[key];
+    i.onchange = () => { TRIM[key] = i.checked; fn(); };
+    parent.append(el('label', { class: 'chk', title }, i, ' ' + label));
+  };
+  const N = TRIM.cols;
+  // --- trimsheet
+  let s = sec('Trimsheet');
+  slider(s, { label: 'Colonnes', min: 1, max: 16, step: 1, get: () => TRIM.cols, set: v => { TRIM.cols = v; TRIM.rightOff = Math.min(TRIM.rightOff, v - 1); reb(); clearTimeout(renderTrimWin.t); renderTrimWin.t = setTimeout(renderTrimWin, 250); } });
+  const modeSel = el('select', {}, el('option', { value: 'edges' }, 'Bords de route (sur texture route)'), el('option', { value: 'blend' }, 'Mélange shader (route + trimsheet, façon RVT)'), el('option', { value: 'band' }, 'Bande complète (toutes les colonnes)'));
+  modeSel.value = TRIM.mode; modeSel.onchange = () => { TRIM.mode = modeSel.value; reb(); renderTrimWin(); };
+  s.append(el('div', { class: 'row1' }, el('label', {}, 'Aperçu'), modeSel));
+  chk(s, 'Guides de colonnes en 2D', 'guides', () => need2D = true);
+    s.append(el('div', { class: 'note' }, 'Les colonnes se suivent le long de la route : 1 → 2 → … → ' + N + ' → 1. Le bas d\'une colonne se raccorde au haut de la suivante, même pendant que tu peins.'));
+  if (TRIM.mode === 'blend') {
+    s = sec('Mélange');
+    slider(s, { label: 'Fondu', min: 0, max: 1, step: 0.01, get: () => TRIM.fade, set: v => { TRIM.fade = v; trimSyncUniforms(); }, fmt: pct, scale: 0.01, title: 'Dégradé automatique depuis le bord intérieur (en % de la largeur du bord)' });
+    slider(s, { label: 'Fondu extérieur', min: 0, max: 1, step: 0.01, get: () => TRIM.fadeOut, set: v => { TRIM.fadeOut = v; trimSyncUniforms(); }, fmt: pct, scale: 0.01, title: 'Dégradé du trimsheet vers le terrain (côté herbe)' });
+    slider(s, { label: 'Height blend', min: 0, max: 3, step: 0.01, get: () => TRIM.hblend, set: v => { TRIM.hblend = v; trimSyncUniforms(); }, title: 'Le mélange suit le canal Height : la terre remplit les creux en premier' });
+    const only = (ids, msg) => { for (const id of ORDER) CH[id].paint = ids.includes(id); renderChannels(); toast(msg); };
+    s.append(el('div', { class: 'btns' },
+      el('button', { onclick: () => only(['alpha'], 'Tu peins le masque de mélange (Opacity) : 0 = route, 1 = trimsheet. Gomme = remettre le trimsheet') }, 'Peindre le masque'),
+      el('button', { onclick: () => only(['color'], 'Tu peins la couleur du trimsheet') }, 'Peindre la couleur')));
+    s.append(el('div', { class: 'note' }, 'Le canal Opacity du trimsheet sert de masque : peins-le à 0 pour laisser voir la route, 1 pour le trimsheet. Roughness, Metallic, Height et Emissive sont mélangés aussi.'));
+  }
+  if (TRIM.mode !== 'band') {
+    s = sec('Bords');
+    slider(s, { label: 'Décalage droit', min: 0, max: Math.max(1, N - 1), step: 1, get: () => TRIM.rightOff, set: v => { TRIM.rightOff = v; reb(); }, title: 'Le côté droit commence N colonnes plus loin, pour ne pas être identique au gauche' });
+    chk(s, 'Côté droit en miroir', 'mirror', reb, 'Le bord intérieur (côté route) utilise le même côté de colonne des deux côtés');
+    chk(s, 'Inverser intérieur / extérieur', 'flipU');
+    s = sec('Géométrie');
+    slider(s, { label: 'Largeur route', min: 1, max: 10, step: 0.1, get: () => TRIM.roadW, set: v => { TRIM.roadW = v; reb(); } });
+    slider(s, { label: 'Largeur bord', min: 0.1, max: 4, step: 0.05, get: () => TRIM.borderW, set: v => { TRIM.borderW = v; reb(); } });
+    slider(s, { label: 'Débordement', min: 0, max: 1.5, step: 0.01, get: () => TRIM.overlap, set: v => { TRIM.overlap = v; reb(); }, title: 'Combien le bord mord sur la route' });
+    slider(s, { label: 'Pente', min: -0.6, max: 0.8, step: 0.01, get: () => TRIM.slope, set: v => { TRIM.slope = v; reb(); }, title: 'Inclinaison du bord vers l\'extérieur' });
+  } else {
+    s = sec('Géométrie');
+    slider(s, { label: 'Largeur bande', min: 0.5, max: 8, step: 0.05, get: () => TRIM.bandW, set: v => { TRIM.bandW = v; reb(); } });
+    chk(s, 'Inverser gauche / droite', 'flipU');
+  }
+  slider(s, { label: 'Échelle V', min: 0.1, max: 4, step: 0.01, get: () => TRIM.vScale, set: v => { TRIM.vScale = v; reb(); }, title: '1 = texels carrés' });
+  slider(s, { label: 'Longueur', min: 4, max: 60, step: 1, get: () => TRIM.length, set: v => { TRIM.length = v; reb(); } });
+  slider(s, { label: 'Courbure', min: 0, max: 4, step: 0.05, get: () => TRIM.curve, set: v => { TRIM.curve = v; reb(); } });
+  slider(s, { label: 'Fréq. virages', min: 0.05, max: 1.5, step: 0.01, get: () => TRIM.curveFreq, set: v => { TRIM.curveFreq = v; reb(); } });
+  // --- route
+  if (TRIM.mode !== 'band') {
+    s = sec('Texture de route');
+    slider(s, { label: 'Tiling U', min: 0.25, max: 8, step: 0.05, get: () => TRIM.roadTU, set: v => { TRIM.roadTU = v; reb(); }, title: 'Répétitions de la texture route sur la largeur (n\'affecte pas le trimsheet)' });
+    slider(s, { label: 'Tiling V (m)', min: 0.5, max: 20, step: 0.1, get: () => TRIM.roadTile, set: v => { TRIM.roadTile = v; reb(); }, title: 'Longueur (unités) d\'une répétition le long de la route (n\'affecte pas le trimsheet)' });
+    const regenRoad = () => { if (!trimRoadCustom) { if (trimRoadTex) trimRoadTex.dispose(); trimRoadTex = makeProcRoadTex(); } reb(); };
+    chk(s, 'Lignes de rive', 'lineEdge', regenRoad, 'Texture procédurale uniquement');
+    chk(s, 'Ligne centrale', 'lineCenter', regenRoad, 'Texture procédurale uniquement');
+    const tint = el('input', { type: 'color', value: TRIM.roadTint }); tint.oninput = () => { TRIM.roadTint = tint.value; roadMat.color.set(tint.value); trimSyncUniforms(); };
+    s.append(el('div', { class: 'row1' }, el('label', {}, 'Teinte'), tint,
+      el('button', { onclick: trimLoadRoad, title: 'Image de route (U = largeur, V = longueur)' }, 'Charger…'),
+      el('button', { onclick: () => { if (trimRoadTex) trimRoadTex.dispose(); trimRoadTex = makeProcRoadTex(); trimRoadCustom = false; reb(); } }, 'Procédurale')));
+  }
+  s = sec(TRIM.mode === 'blend' ? 'Terrain (herbe)' : 'Sol');
+  chk(s, TRIM.mode === 'blend' ? 'Afficher le terrain' : 'Afficher le sol', 'ground');
+  if (TRIM.mode === 'blend') {
+    slider(s, { label: 'Tiling (m)', min: 0.3, max: 20, step: 0.1, get: () => TRIM.grassSize, set: v => { TRIM.grassSize = v; trimSyncUniforms(); }, title: 'Taille d\'une répétition de la texture terrain' });
+    slider(s, { label: 'Largeur', min: 1, max: 40, step: 0.5, get: () => TRIM.groundW, set: v => { TRIM.groundW = v; reb(); } });
+    const gt = el('input', { type: 'color', value: TRIM.grassTint }); gt.oninput = () => { TRIM.grassTint = gt.value; trimSyncUniforms(); };
+    s.append(el('div', { class: 'row1' }, el('label', {}, 'Teinte'), gt,
+      el('button', { onclick: trimLoadGrass, title: 'Image de terrain tileable' }, 'Charger…'),
+      el('button', { onclick: () => { if (trimGrassTex) trimGrassTex.dispose(); trimGrassTex = makeProcGrassTex(); trimSyncUniforms(); } }, 'Procédurale')));
+  } else {
+    const gc = el('input', { type: 'color', value: TRIM.groundCol }); gc.oninput = () => { TRIM.groundCol = gc.value; groundMat.color.set(gc.value); };
+    s.append(el('div', { class: 'row1' }, el('label', {}, 'Couleur'), gc));
+  }
+  // --- défilement & caméra
+  s = sec('Défilement & caméra');
+  chk(s, 'La route se déroule', 'scroll', () => {}, 'La texture défile le long de la route — tu peux continuer à peindre');
+  slider(s, { label: 'Vitesse', min: -4, max: 4, step: 0.05, get: () => TRIM.speed, set: v => TRIM.speed = v });
+  s.append(el('div', { class: 'btns' },
+    el('button', { onclick: () => trimCam('three') }, '3/4'), el('button', { onclick: () => trimCam('driver') }, 'Conducteur'),
+    el('button', { onclick: () => trimCam('top') }, 'Dessus'), el('button', { onclick: () => trimCam('close') }, 'Bord gauche'),
+    el('button', { onclick: () => { trimVOff = 0; buildTrimScene(); } }, 'Reset défil.')));
+  s.append(el('div', { class: 'note' }, 'Clic gauche : peindre · clic droit : tourner · clic milieu : déplacer. La route ne se peint pas, seuls les bords.'));
+}
+async function trimLoadGrass() {
+  const f = await pickFile('image/*'); if (!f) return;
+  const img = await loadImage(URL.createObjectURL(f));
+  if (trimGrassTex) trimGrassTex.dispose();
+  const t = new THREE.Texture(img); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.needsUpdate = true;
+  trimGrassTex = t; trimSyncUniforms(); toast('Texture de terrain : ' + f.name);
+}
+async function trimLoadRoad() {
+  const f = await pickFile('image/*'); if (!f) return;
+  const img = await loadImage(URL.createObjectURL(f));
+  if (trimRoadTex) trimRoadTex.dispose();
+  const t = new THREE.Texture(img); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.needsUpdate = true;
+  trimRoadTex = t; trimRoadCustom = true; buildTrimScene(); toast('Texture de route : ' + f.name);
+}
+(function initTrimWin() {
+  const win = el('div', { id: 'trimWin', class: 'trimwin', style: 'display:none' },
+    el('div', { class: 'twhead', id: 'trimHead' }, el('b', {}, 'Trimsheet — bords de route'), el('span', { style: 'flex:1' }),
+      el('button', { class: 'ghost', title: 'Réduire', onclick: () => win.classList.toggle('min') }, '–'),
+      el('button', { class: 'ghost', title: 'Quitter le mode trimsheet', onclick: () => trimEnable(false) }, '✕')),
+    el('div', { class: 'twbody', id: 'trimBody' }));
+  document.body.append(win);
+  const head = $('#trimHead');
+  head.addEventListener('pointerdown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    head.setPointerCapture(e.pointerId);
+    const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+    const mv = ev => { win.style.left = clamp(ev.clientX - dx, 0, innerWidth - 80) + 'px'; win.style.top = clamp(ev.clientY - dy, 0, innerHeight - 30) + 'px'; win.style.right = 'auto'; };
+    const up = () => { head.removeEventListener('pointermove', mv); head.removeEventListener('pointerup', up); };
+    head.addEventListener('pointermove', mv); head.addEventListener('pointerup', up);
+  });
+  $('#bTrim').onclick = () => trimEnable(!TRIM.on);
+})();
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+c2d.style.cursor = 'crosshair';
+buildPanels();
+createDoc(1024, 1024, 'texture');
+buildTip(); syncBrushUI();
+renderChannels(); pickerFromHex(CH.color.value); updatePickerUI();
+setMesh('sphere'); setPaint3D(false);
+setLayout('23');
+updateStatus();
+requestAnimationFrame(() => { fitView(); resize3D(); });
+loop();
+window.PaintMe = { S, CH, S3, startStroke, strokeTo, endStroke, setTool, setView, fillChannels, undo, redo, normalFromHeight, setMesh, setPaint3D, fitView, V, screenToTex, TRIM, trimEnable, buildTrimScene, hit3D, trimCam };
+</script>
+</body>
+</html>
