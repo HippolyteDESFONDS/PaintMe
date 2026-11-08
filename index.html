@@ -256,6 +256,9 @@ html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highli
           <button id="bModel" title="Charger un modèle .glb / .gltf / .obj / .fbx">Charger modèle…</button>
           <button id="bPaint3D" title="Peindre directement sur l'objet 3D (P). Clic droit = tourner">Peindre en 3D</button>
           <button id="bRotate" title="Rotation automatique">Rotation</button>
+          <span class="rotGrp" title="Tourner l'objet de 90° autour d'un axe (pas la caméra)" style="display:inline-flex;gap:2px;align-items:center">
+            <button id="rotX" style="color:#ff6a6a">⟳X</button><button id="rotY" style="color:#6adf8a">⟳Y</button><button id="rotZ" style="color:#6aa8ff">⟳Z</button><button id="rot0" class="ghost" title="Remettre l'orientation d'origine">↺</button>
+          </span>
           <button id="bTrim" title="Mode Trimsheet route : peindre les bords de route en 3D">Trimsheet route</button>
         </div>
         <div class="hint" id="hint3d">Clic gauche : tourner · clic droit : déplacer · molette : zoom</div>
@@ -1598,6 +1601,10 @@ $('#view3Sel').onchange = e => { S3.view = e.target.value; applyMaterial(); };
 $('#meshSel').onchange = e => { if (TRIM.on) trimEnable(false, true); setMesh(e.target.value); };
 $('#bModel').onclick = async () => { const f = await pickFile('.glb,.gltf,.obj,.fbx'); if (f) loadModel(f); };
 $('#bPaint3D').onclick = () => setPaint3D(!S3.paint3D);
+{ const AX = { X: new THREE.Vector3(1, 0, 0), Y: new THREE.Vector3(0, 1, 0), Z: new THREE.Vector3(0, 0, 1) };
+  for (const k in AX) $('#rot' + k).onclick = () => { if (!current) return; current.rotateOnWorldAxis(AX[k], Math.PI / 2); current.updateMatrixWorld(true); toast('Objet tourné de 90° sur ' + k, 800); };
+  $('#rot0').onclick = () => { if (!current) return; current.rotation.set(0, 0, 0); current.updateMatrixWorld(true); toast('Orientation réinitialisée', 800); };
+}
 $('#bRotate').onclick = () => { S3.rotate = !S3.rotate; $('#bRotate').classList.toggle('on', S3.rotate); };
 let panelsHidden = false;
 function togglePanels() {
