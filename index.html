@@ -175,16 +175,18 @@ body.simple header,body.simple #tools,body.simple #left,body.simple #right,body.
 body.simple #app{grid-template-rows:minmax(0,1fr)!important}
 body.simple #main{grid-template-columns:minmax(0,1fr)!important}
 body.simple .hint{display:none}
-body.simple.pinLayers #right{display:block!important;position:fixed;top:calc(56px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));width:280px;max-height:calc(100% - 140px);z-index:55;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.5);background:rgba(29,30,36,.94)}
-body.simple.pinLayers #right>.sec:not(#secLayers){display:none}
-body.simple.pinLayers #secLayers{border-bottom:0}
-body.simple.pinLayers #secLayers .note{display:none}
+body.simple.pinLayers #right,body.nopanels.pinLayers #right{display:block!important;position:fixed;top:calc(56px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));width:280px;max-height:calc(100% - 140px);z-index:55;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.5);background:rgba(29,30,36,.94)}
+body.simple.pinLayers #right>.sec:not(#secLayers),body.nopanels.pinLayers #right>.sec:not(#secLayers){display:none}
+body.simple.pinLayers #secLayers,body.nopanels.pinLayers #secLayers{border-bottom:0}
+body.simple.pinLayers #secLayers .note,body.nopanels.pinLayers #secLayers .note{display:none}
+body.nopanels.pinLayers #right{top:calc(104px + env(safe-area-inset-top))}
 .lyrow .mthumb{outline:1px solid #fff3;cursor:pointer}
 .lyrow .mthumb.off{opacity:.35;outline:1px dashed var(--bad)}
 .lyrow.em .mthumb{outline:2px solid var(--acc)}
 .lyrow.em canvas:not(.mthumb){outline:none}
 .lyrow.on:not(.em) canvas:not(.mthumb){outline:2px solid var(--acc)}
 .lyrow.clip{margin-left:14px}
+.lyrow .bm{color:var(--mute);font-size:10.5px}
 .lyrow .clipm{color:var(--acc);font-weight:700}
 </style>
 </head>
@@ -330,6 +332,7 @@ body.simple.pinLayers #secLayers .note{display:none}
           <button id="lyPin" class="ghost" title="Épingler : garder les calques visibles en mode épuré">📌</button>
         </div>
         <div id="layerList"></div>
+        <div class="lyop">Fusion <select id="lyBlend" style="flex:1"></select></div>
         <div class="lyop">Opacité <input type="range" id="lyOpac" min="0" max="100" value="100"><span id="lyOpacV">100%</span></div>
         <div class="note"><b>Masque</b> : clique sur sa vignette pour le peindre (pinceau = cacher, gomme = révéler, Maj+clic = activer/désactiver). <b>Écrêter</b> : le calque ne s'affiche que là où le calque du dessous existe. Chaque calque contient tous les canaux (couleur, roughness, height…). Double-clic sur le nom pour renommer. La gomme rend le calque transparent (sur « Fond » elle revient à la valeur de fond).</div>
       </div>
@@ -477,8 +480,11 @@ function valCss(ch, v) {
    CH[id].canvas devient le composite (vue 2D, 3D, export, pipette).
    ========================================================================= */
 const LAYERS = []; let activeLayer = 0, layerSeq = 1;
+const BLENDS = [['source-over', 'Normal'], ['multiply', 'Produit'], ['screen', 'Superposition (écran)'], ['overlay', 'Incrustation'], ['soft-light', 'Lumière douce'], ['hard-light', 'Lumière crue'],
+  ['darken', 'Obscurcir'], ['lighten', 'Éclaircir'], ['color-burn', 'Densité couleur +'], ['color-dodge', 'Densité couleur −'], ['difference', 'Différence'], ['exclusion', 'Exclusion'],
+  ['hue', 'Teinte'], ['saturation', 'Saturation'], ['color', 'Couleur'], ['luminosity', 'Luminosité']];
 function mkLayer(name, base = false) {
-  const L = { name, base, visible: true, opacity: 1, clip: false, mask: null, maskOn: true, editMask: false, ch: {} };
+  const L = { name, base, visible: true, opacity: 1, blend: 'source-over', clip: false, mask: null, maskOn: true, editMask: false, ch: {} };
   for (const id of ORDER) {
     const o = { id, layer: L, canvas: null, ctx: null, snap: null, sctx: null, carry: null };
     for (const k of ['type', 'def', 'name', 'short', 'paint']) Object.defineProperty(o, k, { get: () => CH[id][k] });
@@ -537,7 +543,8 @@ function compRect(id, x, y, w, h) {
   c.fillStyle = valCss(ch, ch.def); c.fillRect(x0, y0, W, H);
   for (let i = 0; i < LAYERS.length; i++) {
     const r = layerRect(i, id, x0, y0, W, H); if (!r) continue;
-    c.globalAlpha = r[3]; c.drawImage(r[0], r[1], r[2], W, H, x0, y0, W, H);
+    c.globalAlpha = r[3]; c.globalCompositeOperation = LAYERS[i].blend || 'source-over';
+    c.drawImage(r[0], r[1], r[2], W, H, x0, y0, W, H);
   }
   c.restore(); ch.texDirty = true;
 }
@@ -556,7 +563,7 @@ function addLayer() {
 function dupLayer() {
   layerOp(() => {
     const src = LAYERS[activeLayer], L = mkLayer(src.name + ' copie', false);
-    L.opacity = src.opacity; L.visible = src.visible; L.clip = src.clip && activeLayer > 0;
+    L.opacity = src.opacity; L.visible = src.visible; L.blend = src.blend; L.clip = src.clip && activeLayer > 0;
     for (const id of ORDER) if (src.ch[id].canvas) ensureLC(L.ch[id]).ctx.drawImage(src.ch[id].canvas, 0, 0);
     if (src.mask) { addMask(L); L.mask.ctx.clearRect(0, 0, S.W, S.H); L.mask.ctx.drawImage(src.mask.canvas, 0, 0); L.maskOn = src.maskOn; L.editMask = false; }
     LAYERS.splice(activeLayer + 1, 0, L); activeLayer++;
@@ -586,7 +593,7 @@ function mergeDown() {
     const parts = {};
     for (const id of ORDER) { const r = layerRect(i, id, 0, 0, S.W, S.H); if (r) { const c = mkCanvas(S.W, S.H); c.getContext('2d').drawImage(r[0], r[1], r[2], S.W, S.H, 0, 0, S.W, S.H); parts[id] = [c, r[3] / (top.clip && clipBase(i) ? clipBase(i).opacity : 1)]; } }
     bakeMask(bot);
-    for (const id in parts) { const b = ensureLC(bot.ch[id]).ctx; b.save(); b.globalAlpha = parts[id][1]; b.drawImage(parts[id][0], 0, 0); b.restore(); }
+    for (const id in parts) { const b = ensureLC(bot.ch[id]).ctx; b.save(); b.globalAlpha = parts[id][1]; b.globalCompositeOperation = top.blend || 'source-over'; b.drawImage(parts[id][0], 0, 0); b.restore(); }
     LAYERS.splice(i, 1); activeLayer = i - 1; clearHistory();
   });
   toast('Calques fusionnés');
@@ -623,7 +630,7 @@ function renderLayers() {
     const L = LAYERS[i];
     const cv = mkCanvas(60, 60); cv.dataset.i = i; cv.title = 'Peindre le contenu du calque';
     const eye = el('button', { class: 'ghost eye', title: 'Afficher / masquer' }, L.visible ? '👁' : '–');
-    const nm = el('span', { class: 'nm' }, L.name);
+    const nm = el('span', { class: 'nm' }, L.name, L.blend && L.blend !== 'source-over' ? el('small', { class: 'bm' }, ' · ' + (BLENDS.find(b => b[0] === L.blend) || [, ''])[1]) : '');
     const kids = [eye];
     if (L.clip) kids.push(el('span', { class: 'clipm', title: 'Écrêté sur le calque du dessous' }, '↳'));
     kids.push(cv);
@@ -640,6 +647,7 @@ function renderLayers() {
   }
   const A = LAYERS[activeLayer];
   if (A) {
+    $('#lyBlend').value = A.blend || 'source-over';
     $('#lyOpac').value = Math.round(A.opacity * 100); $('#lyOpacV').textContent = Math.round(A.opacity * 100) + '%';
     $('#lyInfo').textContent = A.name + (A.mask && A.editMask ? ' · masque' : '');
     $('#lyMask').classList.toggle('on', !!A.mask); $('#lyClip').classList.toggle('on', !!A.clip);
@@ -651,7 +659,7 @@ async function layersData() {
   for (const L of LAYERS) {
     const chs = {};
     for (const id of ORDER) if (L.ch[id].canvas) chs[id] = await png(L.ch[id].canvas);
-    out.push({ name: L.name, base: L.base, visible: L.visible, opacity: L.opacity, clip: L.clip, maskOn: L.maskOn, mask: L.mask ? await png(L.mask.canvas) : null, ch: chs });
+    out.push({ name: L.name, base: L.base, visible: L.visible, opacity: L.opacity, blend: L.blend, clip: L.clip, maskOn: L.maskOn, mask: L.mask ? await png(L.mask.canvas) : null, ch: chs });
   }
   return { active: activeLayer, list: out };
 }
@@ -659,7 +667,7 @@ async function loadLayers(d) {
   if (!d || !d.list || !d.list.length) return;
   LAYERS.length = 0;
   for (const s of d.list) {
-    const L = mkLayer(s.name, !!s.base); L.visible = s.visible !== false; L.opacity = s.opacity ?? 1; L.clip = !!s.clip;
+    const L = mkLayer(s.name, !!s.base); L.visible = s.visible !== false; L.opacity = s.opacity ?? 1; L.clip = !!s.clip; L.blend = s.blend || 'source-over';
     for (const id in s.ch) { if (!L.ch[id]) continue; const lc = ensureLC(L.ch[id]); const img = await loadImage(s.ch[id]); lc.ctx.clearRect(0, 0, S.W, S.H); lc.ctx.drawImage(img, 0, 0, S.W, S.H); }
     if (s.mask) { addMask(L); L.editMask = false; L.maskOn = s.maskOn !== false; const img = await loadImage(s.mask); L.mask.ctx.clearRect(0, 0, S.W, S.H); L.mask.ctx.drawImage(img, 0, 0, S.W, S.H); }
     LAYERS.push(L);
@@ -1880,6 +1888,9 @@ $('#bPaint3D').onclick = () => setPaint3D(!S3.paint3D);
 $('#bRotate').onclick = () => { S3.rotate = !S3.rotate; $('#bRotate').classList.toggle('on', S3.rotate); };
 $('#lyAdd').onclick = addLayer; $('#lyDup').onclick = dupLayer; $('#lyDel').onclick = delLayer;
 $('#lyUp').onclick = () => moveLayer(1); $('#lyDown').onclick = () => moveLayer(-1); $('#lyMerge').onclick = mergeDown;
+for (const [v, n] of BLENDS) $('#lyBlend').append(el('option', { value: v }, n));
+$('#lyBlend').value = (LAYERS[activeLayer] && LAYERS[activeLayer].blend) || 'source-over';
+$('#lyBlend').onchange = e => { const L = LAYERS[activeLayer]; if (!L) return; L.blend = e.target.value; compAll(); renderLayers(); dirtyDoc = true; };
 $('#lyMask').onclick = toggleMask; $('#lyClip').onclick = toggleClip;
 function setPin(on) { document.body.classList.toggle('pinLayers', on); $('#lyPin').classList.toggle('on', on); $('#sbLayers').classList.toggle('on', on); try { localStorage.setItem('pm_pinLayers', on ? '1' : '0'); } catch (_) {} }
 $('#lyPin').onclick = () => setPin(!document.body.classList.contains('pinLayers'));
@@ -1899,7 +1910,7 @@ $('#nativeCol').addEventListener('input', () => setTimeout(() => $('#sbColor').s
 let panelsHidden = false;
 function togglePanels() {
   if (window.innerWidth <= 820) { document.body.classList.toggle('showpanels'); return; }
-  panelsHidden = !panelsHidden;
+  panelsHidden = !panelsHidden; document.body.classList.toggle('nopanels', panelsHidden);
   $('#left').style.display = $('#right').style.display = panelsHidden ? 'none' : '';
   $('#main').style.gridTemplateColumns = panelsHidden ? '46px minmax(0,1fr)' : '';
   requestAnimationFrame(() => { resize3D(); need2D = true; });
